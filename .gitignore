@@ -1,0 +1,29 @@
+# Ignore everything
+#*
+# Don't ignore directories
+#!*/
+
+# But do not ignore these files
+#!*.do
+#!*.ipynb
+#!*.qmd
+#!*.doc*
+#!*.xls*
+*.gph
+*.dta
+*.csv
+*.mp4
+*.m4a
+~*
+
+# Do Ignore specific folders
+Results and Figures/
+Data/
+.conda
+
+
+# Optionally, ignore other common unnecessary files
+.DS_Store
+Thumbs.db
+*.log
+*.stswp
