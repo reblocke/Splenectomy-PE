@@ -26,8 +26,8 @@ capture log close
 * Load data
 clear
 
-cd "C:\Users\reblo\Box\Residency Personal Files\Scholarly Work\Locke Research Projects\Splenectomy-PE\"
-//cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/TriNetX Code"
+//cd "C:\Users\reblo\Box\Residency Personal Files\Scholarly Work\Locke Research Projects\Splenectomy-PE\"
+cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
 
 program define datetime 
 end
@@ -52,6 +52,29 @@ log using temp.log, replace
 clear
 cd "Data"
 
+/* 
+
+"We have now gotten through the secondary data and added things as you requested for each group (Age, sex, BMI should be there for all pts and made the chronic changes into a 1 or 0 variable).   Also moved the excluded splenectomy patients to a different tab.  "
+
+Age, gender, BMI first ; subsequent analysis may include  - 
+
+Race/ethnicity
+Presence/absence of provoking factors for PE or CTEPH
+Cancer, immobility/injury within 30d, surgery within 30d, clotting d/o, chf, chronic lung dz, afib, pregnancy, estrogen use, obesity, CVC (central or picc line) presence within 30d), thyroid disease, prior VTE of any kind, antiphospholipid ab, lupus anticoagulant, factor VIII level if present, non-O blood group,  inflammatory bowel disease)
+DVT present, absent, or unknown based on chart records within 1 week of incident event.  
+VS related to PE hospitalization, PESI score at dx
+Hospital admission location, LOS in ICU and hospital
+PE therapy received
+RV strain on CTA
+Highest BNP and trop during hospitalization
+Echo findings/RHC findings with PH
+Eventual diagnosis of CTEPH, CTED or chronic PE on imaging
+History of splenectomy (as well as age at splenectomy and indication for it if present)
+Estrogen use
+
+*/ 
+
+
 
 //Variables of interest: 
 //age == age_peyears
@@ -60,9 +83,10 @@ cd "Data"
 //marklocation == centralmarksreview
 //markqanadli == marksqanadli
 
-import excel "PE after splenectomy.xlsx", sheet("Included") firstrow case(lower)
+import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
 drop if missing(age_peyears)
-keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli
+keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no
+destring chronicchanges1yes0no, replace
 rename age_peyears age 
 rename centraldarrensreview central_darren
 replace central_darren = 0 if missing(central_darren)
@@ -72,18 +96,20 @@ replace central_mark = 1 if centralmarksreview == "central"
 drop centralmarksreview
 rename marksqanadli qanadli_mark
 gen splenectomy = 1
+rename malegender1yes0no male_sex 
+rename chronicchanges1yes0no chronic_changes
 save splenectomy, replace
 clear
 
-import excel "PE without splenectomy.xlsx", sheet("Included") firstrow case(lower)
-drop if missing(ageattimeofpe)
-keep ageattimeofpe dwpelocation qanadli marklocation markqanadli
-rename ageattimeofpe age
+import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
+drop if missing(age_peyears)
+keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges
+rename age_peyears age
 replace dwpelocation = lower(trim(dwpelocation))
 gen central_darren = 0
 replace central_darren = 1 if dwpelocation == "central"
 drop dwpelocation
-rename qanadli qanadli_darren
+rename dwqanadli qanadli_darren
 replace marklocation = lower(trim(marklocation))
 gen central_mark = 0 
 replace central_mark = 1 if marklocation == "interlobar"
@@ -92,19 +118,28 @@ replace central_mark = 1 if marklocation == "lobar"
 drop marklocation
 rename markqanadli qanadli_mark
 gen  splenectomy = 0
+rename malegender1yes0no male_sex 
+gen chronic_changes = 0 
+replace chronic_change = 1 if chronicchanges == 1
+drop chronicchanges
 save no_splenectomy, replace
 
 append using splenectomy.dta
 
 
 label variable age "Age (years)"
+label variable male_sex "Male Sex"
+label define male_lab 0 "Female" 1 "Male"
+label values male_sex male_lab
 label variable qanadli_darren "Qanadli Score (Darren)"
 label variable qanadli_mark "Qanadli Score (Mark)"
 label variable central_darren "Central PE? (Darren)"
 label variable central_mark "Central PE? (Mark)"
 label variable splenectomy "Splenectomy"
+label variable chronic_changes "Chronic Changes on Imaging"
 label define splenectomy_lab 0 "No Splenectomy" 1 "Splenectomy"
 label values splenectomy splenectomy_lab
+
 
 save full_db, replace
 export excel using "splenectomy_pe_data.xlsx", replace firstrow(variables)
@@ -118,6 +153,7 @@ cd ..
 table1_mc, by(splenectomy) ///
 		vars( ///
 		age contn %4.0f \ ///
+		male_sex bin %.0f \ ///
 		central_darren bin %4.0f \ ///
 		central_mark bin %4.0f \ ///
 		qanadli_darren contn %4.2f \ ///
