@@ -85,7 +85,7 @@ Estrogen use
 
 import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
 drop if missing(age_peyears)
-keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no
+keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity
 destring chronicchanges1yes0no, replace
 rename age_peyears age 
 rename centraldarrensreview central_darren
@@ -98,12 +98,14 @@ rename marksqanadli qanadli_mark
 gen splenectomy = 1
 rename malegender1yes0no male_sex 
 rename chronicchanges1yes0no chronic_changes
+replace raceethnicity = lower(trim(raceethnicity))
+destring bmi_pe, replace force
 save splenectomy, replace
 clear
 
 import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
 drop if missing(age_peyears)
-keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges
+keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity
 rename age_peyears age
 replace dwpelocation = lower(trim(dwpelocation))
 gen central_darren = 0
@@ -122,6 +124,9 @@ rename malegender1yes0no male_sex
 gen chronic_changes = 0 
 replace chronic_change = 1 if chronicchanges == 1
 drop chronicchanges
+rename ethnicity raceethnicity
+replace raceethnicity = lower(trim(raceethnicity))
+destring bmi_pe, replace force
 save no_splenectomy, replace
 
 append using splenectomy.dta
@@ -139,7 +144,19 @@ label variable splenectomy "Splenectomy"
 label variable chronic_changes "Chronic Changes on Imaging"
 label define splenectomy_lab 0 "No Splenectomy" 1 "Splenectomy"
 label values splenectomy splenectomy_lab
+label variable bmi_pe "BMI"
+label variable raceethnicity "Race/Ethnicity"
 
+
+//Generate Averages 
+* Create a new variable "qanadli" that is the average of "qanadli_mark" and "qanadli_darren"
+generate qanadli = (qanadli_mark + qanadli_darren) / 2
+label variable qanadli "Qanadli Score (Avg)"
+
+//if either called central, call it central
+generate central = 0
+replace central = 1 if central_darren == 1 | central_mark == 1
+label variable central "Central? (either rater)"
 
 save full_db, replace
 export excel using "splenectomy_pe_data.xlsx", replace firstrow(variables)
@@ -153,11 +170,16 @@ cd ..
 table1_mc, by(splenectomy) ///
 		vars( ///
 		age contn %4.0f \ ///
-		male_sex bin %.0f \ ///
+		male_sex bin %4.0f \ ///
+		raceethnicity cat %4.0f \ ///
+		bmi_pe conts %4.1f \ ///
 		central_darren bin %4.0f \ ///
 		central_mark bin %4.0f \ ///
-		qanadli_darren contn %4.2f \ ///
-		qanadli_mark contn %4.2f \ ///
+		qanadli_darren conts %4.2f \ ///
+		qanadli_mark conts %4.2f \ ///
+		central bin %4.0f \ ///
+		qanadli conts %4.2f \ ///
+		chronic_changes bin %4.0f  ///
 		) ///
 		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/overall by splenectomy.xlsx", replace)
 
@@ -182,22 +204,14 @@ twoway (scatter qanadli_mark qanadli_darren) ///
 	   title("Agreement in Qanadli Score Assessments")
 graph export "Results and Figures/$S_DATE/Overlap in Qanadli Assessments.png", as(png) name("Graph") replace 
 	   
-//Generate Averages 
-* Create a new variable "qanadli" that is the average of "qanadli_mark" and "qanadli_darren"
-generate qanadli = (qanadli_mark + qanadli_darren) / 2
-
-//if either called central, call it central
-generate central = 0
-replace central = 1 if central_darren == 1 | central_mark == 1
-
-twoway kdensity qanadli if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*1.25) bwidth(0.1) range(0 1) || ///
-kdensity qanadli if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*1.25) bwidth(0.1) range(0 1) ||, ///
-legend(pos(12) order(1 "No Splenectomy" 2 "Splenectomy") rows(2)) ///
-xlabel(0(0.1)1, labsize(medlarge)) ///
-ylabel(, labsize(medlarge)) ///
-xtitle("Qanadli Score", size(medium)) ///
-ytitle("Relative Frequency", size(medium)) ///
-title("Qanadli Score Distribution by Splenectomy Status", size(medium)) ///
+twoway kdensity qanadli if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(0.1) range(0 1) || ///
+kdensity qanadli if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(0.1) range(0 1) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(0.1)1, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("Qanadli Score", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("Qanadli Score by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
@@ -205,16 +219,81 @@ graph export "Results and Figures/$S_DATE/Qanadli by Splenectomy Status.png", as
 
 //Association between splenectomy and quanadli average
 
-regress qanadli splenectomy
-regress qanadli splenectomy age
+//poisson? 
+
+poisson qanadli splenectomy, irr
+poisson qanadli splenectomy age male_sex, irr
+poisson qanadli splenectomy age male_sex bmi_pe, irr
+estimates store qanadli
+
+//regress qanadli splenectomy
+//regress qanadli splenectomy age male_sex
 
 //Chi2 of binary association.
 
 logistic central splenectomy
-logistic central splenectomy age
+logistic central splenectomy age male_sex
+logistic central splenectomy age male_sex bmi_pe
+estimates store central
 
 
 
+//chronic changes
+
+tab splenectomy chronic_changes, row
+logistic chronic_changes splenectomy
+logistic chronic_changes splenectomy age male_sex
+logistic chronic_changes splenectomy age male_sex bmi_pe
+estimates store chronic_changes
 
 
+coefplot qanadli, eform ///
+drop(_cons) ///
+xscale(log range(0.25 4) extend) ///
+xline(1) ///
+xlabel(0.25 0.5 1 2 4, labsize(large)) ///
+xscale(extend) ///
+xtitle("Multiplicative Change in Qanadli Score" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+graph export "Results and Figures/$S_DATE/Qanadli Poisson Regression.png", as(png) name("Graph") replace 
+
+coefplot central, eform ///
+drop(_cons) ///
+xline(1) ///
+xlabel(0.125 0.25 0.5 1 2 4, labsize(large)) ///
+xscale(log range(0.125 4) extend) ///
+xtitle("Odds ratio of Central PE" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+graph export "Results and Figures/$S_DATE/Central Logistic Regression.png", as(png) name("Graph") replace
+
+
+coefplot chronic_changes, eform ///
+drop(_cons) ///
+xline(1) ///
+xlabel(0.5 1 2 4 8 16 32, labsize(large)) ///
+xscale(log range(0.5 32) extend) ///
+xtitle("Odds ratio of Chronic Changes on CT" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+graph export "Results and Figures/$S_DATE/Chronic Changes Logistic Regression.png", as(png) name("Graph") replace
 
