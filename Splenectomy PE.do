@@ -158,6 +158,9 @@ generate central = 0
 replace central = 1 if central_darren == 1 | central_mark == 1
 label variable central "Central? (either rater)"
 
+recode central (0=1) (1=0), generate(peripheral)
+label variable peripheral "Peripheral PE"
+
 save full_db, replace
 export excel using "splenectomy_pe_data.xlsx", replace firstrow(variables)
 //use subsample_db_5_perc
@@ -236,6 +239,11 @@ logistic central splenectomy age male_sex
 logistic central splenectomy age male_sex bmi_pe
 estimates store central
 
+logistic peripheral splenectomy
+logistic peripheral splenectomy age male_sex
+logistic peripheral splenectomy age male_sex bmi_pe
+estimates store peripheral
+
 
 
 //chronic changes
@@ -280,6 +288,26 @@ mlabgap(*1) ///
 scheme(white_tableau) 
 graph export "Results and Figures/$S_DATE/Central Logistic Regression.png", as(png) name("Graph") replace
 
+/* Used for abstract */ 
+
+coefplot peripheral, eform ///
+drop(_cons) ///
+xline(1) ///
+xlabel(0.25 0.5 1 2 4 8, labsize(large)) ///
+xscale(log range(0.25 4 8) extend) ///
+xtitle("Odds ratio of Peripheral PE" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+graph export "Results and Figures/$S_DATE/Peripheral Logistic Regression.png", as(png) name("Graph") replace
+
+
+
 
 coefplot chronic_changes, eform ///
 drop(_cons) ///
@@ -296,4 +324,7 @@ mlabposition(12) ///
 mlabgap(*1) ///
 scheme(white_tableau) 
 graph export "Results and Figures/$S_DATE/Chronic Changes Logistic Regression.png", as(png) name("Graph") replace
+
+
+
 
