@@ -5,9 +5,6 @@ Analytic Code
 
 Brian W Locke MD MSCI
 
-Last updated: 
-7/1/2024
-
 
 //TODO: for darren
 Couple data cleaning requests - just so that I don't have to rewrite the data cleaning code if you make further updates. 
@@ -83,9 +80,11 @@ Estrogen use
 //marklocation == centralmarksreview
 //markqanadli == marksqanadli
 
+
 import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
 drop if missing(age_peyears)
-keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity
+keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
+
 destring chronicchanges1yes0no, replace
 rename age_peyears age 
 rename centraldarrensreview central_darren
@@ -100,12 +99,24 @@ rename malegender1yes0no male_sex
 rename chronicchanges1yes0no chronic_changes
 replace raceethnicity = lower(trim(raceethnicity))
 destring bmi_pe, replace force
+//pesi_pe - already int
+//admissionlocation - string; make categories later.
+replace hospitallosdays = 0 if missing(hospitallosdays)
+replace iculos = 0 if missing(iculos)
+replace bnp_max = "0" if bnp_max == "<10"
+destring bnp_max, replace force
+replace troponin_max = "0" if troponin_max == "<0.02"
+replace troponin_max = "0" if troponin_max == "<0.01"
+destring troponin_max, replace force
+
 save splenectomy, replace
 clear
 
+
 import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
 drop if missing(age_peyears)
-keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity
+keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
+
 rename age_peyears age
 replace dwpelocation = lower(trim(dwpelocation))
 gen central_darren = 0
@@ -127,6 +138,17 @@ drop chronicchanges
 rename ethnicity raceethnicity
 replace raceethnicity = lower(trim(raceethnicity))
 destring bmi_pe, replace force
+//pesi_pe - already int
+//admissionlocation - string; make categories later.
+replace hospitallosdays = 0 if missing(hospitallosdays)
+replace iculos = 0 if missing(iculos)
+replace bnp_max = "0" if bnp_max == "<10"
+destring bnp_max, replace force
+rename troponin_maxngml troponin_max
+replace troponin_max = "0" if troponin_max == "<0.02"
+replace troponin_max = "0" if troponin_max == "<0.01"
+destring troponin_max, replace force
+
 save no_splenectomy, replace
 
 append using splenectomy.dta
@@ -146,6 +168,67 @@ label define splenectomy_lab 0 "No Splenectomy" 1 "Splenectomy"
 label values splenectomy splenectomy_lab
 label variable bmi_pe "BMI"
 label variable raceethnicity "Race/Ethnicity"
+label variable pesi_pe "PESI"
+label variable admissionlocation "Admit Location"
+label variable hospitallosdays	"Hospital LOS"
+label variable iculos "ICU LOS"
+label variable bnp_max "BNP (max)"
+label variable troponin_max "Troponin (max)"
+
+//Data cleaning
+replace admissionlocation = "ICU" if admissionlocation == "Neuro ICU"
+replace admissionlocation = "ICU" if admissionlocation == "STICU"
+replace admissionlocation = "Outpatient" if admissionlocation == "ED discharge"
+replace admissionlocation = "Outpatient" if admissionlocation == "no admission document"
+replace admissionlocation = "OSH" if admissionlocation == "Admitted OSH"
+replace admissionlocation = "Ward" if admissionlocation == "Medicine Wards"
+replace admissionlocation = "Ward" if admissionlocation == "Cardiology Wards"
+replace admissionlocation = "Ward" if admissionlocation == "Medcine Wards"
+replace admissionlocation = "Ward" if admissionlocation == "Medicine Wards "
+replace admissionlocation = "Ward" if admissionlocation == "Neuro Wards"
+replace admissionlocation = "Ward" if admissionlocation == "Trauma Surgery"
+
+replace rightheartstrain = lower(strtrim(rightheartstrain))
+replace rightheartstrain = "" if rightheartstrain == "n/a"
+replace rightheartstrain = "yes" if rightheartstrain == "mild"
+gen rightheartstrain_binary = .
+replace rightheartstrain_binary = 1 if rightheartstrain == "yes"
+replace rightheartstrain_binary = 0 if rightheartstrain == "no"
+drop rightheartstrain
+rename rightheartstrain_binary rightheartstrain
+label variable rightheartstrain "R Heart Strain?"
+
+replace dilatedpulmartery = lower(strtrim(dilatedpulmartery))
+replace dilatedpulmartery = "" if dilatedpulmartery == "n/a"
+replace dilatedpulmartery = "" if dilatedpulmartery == "not listed"
+replace dilatedpulmartery = "yes" if substr(dilatedpulmartery, 1, 4) == "mild"
+replace dilatedpulmartery = "yes" if substr(dilatedpulmartery, 1, 3) == "yes"
+replace dilatedpulmartery = "yes" if dilatedpulmartery == "borderline"
+replace dilatedpulmartery = "yes" if substr(dilatedpulmartery, 1, 3) == "sev"
+gen dilatedpulmartery_binary = .
+replace dilatedpulmartery_binary = 1 if dilatedpulmartery == "yes"
+replace dilatedpulmartery_binary = 0 if dilatedpulmartery == "no"
+drop dilatedpulmartery
+rename dilatedpulmartery_binary dilatedpulmartery
+label variable dilatedpulmartery "Dilated PA on CT?"
+
+//normal RV:LV < 1
+
+replace rvlvratio_initial1abnormal = lower(strtrim(rvlvratio_initial1abnormal))
+replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "n/a"
+replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "not listed"
+replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "not measured"
+replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "indeterminate"
+replace rvlvratio_initial1abnormal = "0.9" if rvlvratio_initial1abnormal == "<1"
+replace rvlvratio_initial1abnormal = "1.1" if rvlvratio_initial1abnormal == ">1"
+destring rvlvratio_initial1abnormal, replace force
+gen rvlvratio_initial1abnormal_bin = .
+replace rvlvratio_initial1abnormal_bin = 1 if !missing(rvlvratio_initial1abnormal) & rvlvratio_initial1abnormal > 1
+replace rvlvratio_initial1abnormal_bin = 0 if !missing(rvlvratio_initial1abnormal) &rvlvratio_initial1abnormal < 1
+drop rvlvratio_initial1abnormal
+rename rvlvratio_initial1abnormal_bin rvlvratio_initial1abnormal
+label variable rvlvratio_initial1abnormal "Abnormal RV:LV?"
+
 
 
 //Generate Averages 
@@ -183,8 +266,17 @@ table1_mc, by(splenectomy) ///
 		central bin %4.0f \ ///
 		qanadli conts %4.2f \ ///
 		chronic_changes bin %4.0f  ///
+		pesi_pe conts %4.0f \ ///
+		admissionlocation cat %4.0f \ ///
+		hospitallosdays conts %4.0f \ ///
+		iculos conts %4.0f \ ///
+		troponin_max conts %4.2f \ ///
+		bnp_max conts %4.0f \ ///
+		rightheartstrain bin %4.0f \ ///
+		dilatedpulmartery bin %4.0f \ ///
+		rvlvratio_initial1abnormal bin %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/overall by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/overall by splenectomy.xlsx", replace)
 
 //Kappa Score of Agreement
 kap central_darren central_mark, tab
@@ -244,8 +336,6 @@ logistic peripheral splenectomy age male_sex
 logistic peripheral splenectomy age male_sex bmi_pe
 estimates store peripheral
 
-
-
 //chronic changes
 
 tab splenectomy chronic_changes, row
@@ -253,6 +343,59 @@ logistic chronic_changes splenectomy
 logistic chronic_changes splenectomy age male_sex
 logistic chronic_changes splenectomy age male_sex bmi_pe
 estimates store chronic_changes
+
+
+// pesi_pe "PESI"
+twoway kdensity pesi_pe if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(10) range(0 240) || ///
+kdensity pesi_pe if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(10) range(0 240) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(40)240, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("PESI", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("PESI Score by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+
+// admissionlocation "Admit Location"
+//catplot
+
+
+// variable hospitallosdays	"Hospital LOS"
+twoway kdensity hospitallosdays if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(5) range(0 60) || ///
+kdensity hospitallosdays if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(5) range(0 60) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(10)60, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("Hospital LOS", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("Hospital LOS by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/Hospital LOS by Splenectomy Status.png", as(png) name("Graph") replace 
+
+// iculos "ICU LOS"
+twoway kdensity iculos if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(2.5) range(0 30) || ///
+kdensity iculos if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(2.5) range(0 30) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(5)30, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("ICU LOS", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("ICU LOS by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/ICU LOS by Splenectomy Status.png", as(png) name("Graph") replace 
+
+// bnp_max "BNP (max)"
+//log transform
+
+// troponin_max "Troponin (max)"
+//log transform
 
 
 coefplot qanadli, eform ///
