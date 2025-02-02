@@ -37,7 +37,9 @@ capture log close
 clear
 
 //cd "C:\Users\reblo\Box\Residency Personal Files\Scholarly Work\Locke Research Projects\Splenectomy-PE\"
-cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
+//cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
+cd "/Users/reblocke/Research/Splenectomy-PE"
+
 
 program define datetime 
 end
@@ -86,20 +88,34 @@ cd "Data"
 
 */ 
 
+//Nussance variables: mrn pe_diagnosis imagesavailable ctimagesavailabecpepostspl abletodeterminelocation1 qanadlimath centralmarksreview notes w pe_diagnosis_dt 
+//w = duplicate of male gender
+//Maybe useful? categorical ratings: location (and marks = centralmarksreview) - just central vs not in no splenectomy cohort.
 
 
-//Variables of interest: 
-//age == age_peyears
-//dwpelocation == centraldarrensreview
-//qanadli == qanadlifinal
-//marklocation == centralmarksreview
-//markqanadli == marksqanadli
+//Splenectomy: procedure_dt procedure_dsp 
+//PE: pe_diagnosis_dt_reviseddw (= same?) radiologydescription dweval
+
+//TODO: Calculate time from Procedure_dt to pe_diagnosis_dt
+
+//Echo params: ef la_area septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho
+
+//[ ] wells:  - no #1, curr DVT signs, most likely, hemoptysis
+//workup: antiphospholipidab lupusanticoagulant factorviii nonobloodgroup 
+//setting: pediagnosissettingoutptinp edpedx1yes
+
+
+//Done
+//Pt chars: raceethnicity
+//Presentation:  dmissionlocation pesi_pe bnp_max troponin_max 
+//Outcomes: petherapyactpamechanical hospitallosdays iculos  
 
 
 import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
 
 drop if missing(pe_diagnosis_dt)  // drop rows not corresponding to a pt 
-keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
+
+keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease
 
 destring chronicchanges1yes0no, replace
 rename age_peyears age 
@@ -125,16 +141,45 @@ destring bnp_max, replace force
 replace troponin_max = "0" if troponin_max == "<0.02"
 replace troponin_max = "0" if troponin_max == "<0.01"
 destring troponin_max, replace force
+replace paenlargement1yes0no2 = 0 if missing(paenlargement1yes0no2)
+replace increasedpaa09 = 0 if missing(increasedpaa09)
+replace paenlargementorincreasedpaa = 0 if missing(paenlargementorincreasedpaa)
 
 save splenectomy, replace
 clear
 
-//new ones PA diameter (mm)	Aortic Diameter (mm)	PA/A	PA Enlargement (1=yes, 0 =no) >27f, >29m	Increased PA/A (>0.9)	PA enlargement or Increased PA/A	PE Diagnosis setting (outpt, inpt, ED)	ED PE Dx (1 = yes)
+
+//nusance variables: id ctreport ctimageavailable  central1yes  dwanalysis k fupedata q br bs bt bu
+//  marklocation has finer substitution, k is binary rating
+// comments  mostly about if they died or not.
+
+
+//date: pe_diagnosis_dt_reviseddw
+
+
+//antiphospholipidab lupusanticoagulant factorviii nonobloodgroup 
+
+//comorbidities: sicklecell    clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease  inflammatoryboweldisease 
+
+//wells: 
+
+//echo ef la_volumemlm2 septalflatteneningonecho rvsp pvacceltime trvelocity_initialms tapse_initial rvbasaldiameter_initial raarea_initialcm2 presenceofeffusiononecho
+
+//course: petherapyactpamechanical 
+
+
+//done
+//patient chars: ethnicity 
+//vitals bnp_max troponin_maxngml pesi_pe rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
+//setting: admissionlocation 
+//outcomes: deathreported [don't have for ED?] hospitallosdays iculos 
+
 
 
 import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
 drop if missing(pe_diagnosis_dt) // drop rows not corresponding to a pt 
-keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
+
+keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease
 
 rename age_peyears age
 replace dwpelocation = lower(trim(dwpelocation))
@@ -167,11 +212,18 @@ rename troponin_maxngml troponin_max
 replace troponin_max = "0" if troponin_max == "<0.02"
 replace troponin_max = "0" if troponin_max == "<0.01"
 destring troponin_max, replace force
+replace paenlargement1yes0no2 = 0 if missing(paenlargement1yes0no2)
+replace increasedpaa09 = 0 if missing(increasedpaa09)
+replace paenlargementorincreasedpaa = 0 if missing(paenlargementorincreasedpaa)
+destring highesthr_pe, replace force
+replace lowestbp_pemap = "" if lowestbp_pemap == "arrest"
 
 save no_splenectomy, replace
 
 append using splenectomy.dta
 
+
+//Variable Defintions
 
 label variable age "Age (years)"
 label variable male_sex "Male Sex"
@@ -193,6 +245,20 @@ label variable hospitallosdays	"Hospital LOS"
 label variable iculos "ICU LOS"
 label variable bnp_max "BNP (max)"
 label variable troponin_max "Troponin (max)"
+
+rename padiametermm pa_d 
+label variable pa_d "Pulm Art diameter (mm)"
+rename aorticdiametermm aa_d
+label variable aa_d "Asc Aorta diameter (mm)"
+rename paa pa_aa 
+label variable pa_aa "PA to AA ratio"
+rename paenlargement1yes0no2 pa_enlarged
+label variable pa_enlarged "PA Enlarged? (>27 mm fem; >29 mm male)"
+rename increasedpaa09 high_pa_aa 
+label variable high_pa_aa "PA:AA > 0.9?"
+rename paenlargementorincreasedpaa pa_enlarged_by_d_or_ratio
+label variable pa_enlarged_by_d_or_ratio "PA Enlargment by diam or ratio?"
+
 
 //Data cleaning
 replace admissionlocation = "ICU" if admissionlocation == "Neuro ICU"
@@ -216,6 +282,84 @@ replace rightheartstrain_binary = 0 if rightheartstrain == "no"
 drop rightheartstrain
 rename rightheartstrain_binary rightheartstrain
 label variable rightheartstrain "R Heart Strain?"
+
+replace hxofpriorpedvt = "yes" if hxofpriorpedvt == "DVT"
+replace hxofpriorpedvt = "yes" if lower(substr(hxofpriorpedvt, 1, 3)) == "yes"
+gen prior_pe_dvt = 0 
+replace prior_pe_dvt = 1 if hxofpriorpedvt == "yes"
+label variable prior_pe_dvt "Prior PE or DVT?"
+drop hxofpriorpedvt
+
+replace hxofpriorthrombosispvtcva = "yes" if lower(substr(hxofpriorthrombosispvtcva, 1, 3)) == "yes"
+gen prior_other_vte = 0 
+replace prior_other_vte = 1 if hxofpriorthrombosispvtcva == "yes"
+label variable prior_other_vte "Prior Other VTE? (PVT, SMV)"
+drop hxofpriorthrombosispvtcva
+
+replace malignancy = "no" if strpos(malignancy, "poss") > 0  //no confirmed
+replace malignancy = "yes" if lower(substr(malignancy, 1, 3)) == "yes"
+gen active_malig = 0 
+replace active_malig = 1 if malignancy == "yes" 
+drop malignancy
+label variable active_malig "Malignancy"
+
+replace immobilityinjurywithin30d  = "yes" if lower(substr(immobilityinjurywithin30d , 1, 3)) == "yes"
+gen wells_immobility = . 
+replace wells_immobility = 0 if immobilityinjurywithin30d  == "no" 
+replace wells_immobility = 1 if immobilityinjurywithin30d  == "yes" 
+drop immobilityinjurywithin30d 
+label variable wells_immobility "Injury/Immobility w/n 30d"
+
+replace surgerywithin30d   = "yes" if lower(substr(surgerywithin30d, 1, 3)) == "yes"
+gen wells_surg = . 
+replace wells_surg = 0 if surgerywithin30d == "no" 
+replace wells_surg = 1 if surgerywithin30d == "yes" 
+drop surgerywithin30d 
+label variable wells_surg "Surgery w/n 30d"
+
+
+//sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease
+
+
+
+
+rename highesthr_pe highest_hr 
+label variable highest_hr "Highest Heart Rate"
+
+replace o2max_pe = lower(o2max_pe)
+replace o2max_pe = "Vent" if strpos(o2max_pe, "vent") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "vent") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "hfnc") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "nrb") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "pap") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "mask") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "fio2") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "10l") > 0 
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "15l") > 0 
+replace o2max_pe = regexr(o2max_pe, "\(.+\)$", "") // remove parentheses
+replace o2max_pe = "1l" if o2max_pe == "1"
+replace o2max_pe = "2l" if o2max_pe == "2"
+replace o2max_pe = "2l" if o2max_pe == "2.5l"
+replace o2max_pe = "3l" if o2max_pe == "3"
+replace o2max_pe = "3l" if o2max_pe == "2-3l"
+replace o2max_pe = "4l" if o2max_pe == "4l "
+replace o2max_pe = "4l" if o2max_pe == "4"
+replace o2max_pe = "6l" if o2max_pe == "5-6l"
+replace o2max_pe = "0l (RA)" if o2max_pe == "ra"
+encode o2max_pe, generate(max_resp)
+drop o2max_pe
+label variable max_resp "Max Respiratory Support"
+
+replace lowestbp_pemap = regexr(lowestbp_pemap , "\(.+\)$", "") // remove parentheses
+gen sbp_str = substr(lowestbp_pemap, 1, strpos(lowestbp_pemap, "/") - 1)
+destring sbp_str, generate(lowest_sbp) force
+gen dbp_str = substr(lowestbp_pemap, strpos(lowestbp_pemap, "/") + 1, .)
+destring dbp_str, generate(lowest_dbp) force
+gen lowest_map = (lowest_sbp/3)+(2*lowest_dbp/3)
+drop lowestbp_pemap sbp_str dbp_str
+label variable lowest_sbp "Lowest Sys. BP (mmHg)"
+label variable lowest_dbp "Lowest Dia. BP (mmHg)"
+label variable lowest_map "Lowest MAP (mmHg)"
 
 replace dilatedpulmartery = lower(strtrim(dilatedpulmartery))
 replace dilatedpulmartery = "" if dilatedpulmartery == "n/a"
@@ -249,7 +393,8 @@ rename rvlvratio_initial1abnormal_bin rvlvratio_initial1abnormal
 label variable rvlvratio_initial1abnormal "Abnormal RV:LV?"
 
 
-//Generate Average of raters var
+
+//Generate Average of raters vars
 * Create a new variable "qanadli" that is the average of "qanadli_mark" and "qanadli_darren"
 generate qanadli = (qanadli_mark + qanadli_darren) / 2
 label variable qanadli "Qanadli Score (Avg)"
@@ -273,31 +418,80 @@ cd ..
 
 /* Analysis */ 
 
+
+
+//Baseline Characteristics, by spelenectomy status
+
+/* Add past medical history, etc. */ 
+
+
 table1_mc, by(splenectomy) ///
 		vars( ///
 		age contn %4.0f \ ///
 		male_sex bin %4.0f \ ///
 		raceethnicity cat %4.0f \ ///
 		bmi_pe conts %4.1f \ ///
-		central_darren bin %4.0f \ ///
-		central_mark bin %4.0f \ ///
-		qanadli_darren conts %4.2f \ ///
-		qanadli_mark conts %4.2f \ ///
+		prior_pe_dvt bin %4.0f \ ///
+		prior_other_vte bin %4.0f \ ///
+		active_malig bin %4.0f \ ///
+		wells_surg bin %4.0f \ ///
+		wells_immobility bin %4.0f \ ///
+		) ///
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/baseline chars by splenectomy.xlsx", replace)
+
+		
+// PE/Physiologic  Characteristics: 
+
+table1_mc, by(splenectomy) ///
+		vars( ///
 		central bin %4.0f \ ///
 		qanadli conts %4.2f \ ///
-		chronic_changes bin %4.0f  ///
+		pa_d conts %4.2f \ ///
+		aa_d conts %4.2f \ ///
+		pa_aa conts %4.2f \ ///
+		pa_enlarged bin %4.0f \ ///
+		high_pa_aa bin %4.0f \ ///
+		pa_enlarged_by_d_or_ratio bin %4.0f \ ///
+		rvlvratio_initial1abnormal bin %4.0f \ ///
+		) ///
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/pe chars by splenectomy.xlsx", replace)
+		
+				// dilatedpulmartery bin %4.0f \ /// - not sure what this one is about. Comment in report?
+
+//Very high rates of enlargment. 				
+logistic high_pa_aa male age splenectomy, or //controlling for age, sex actually makes more dramatic.
+				
+				
+		
+// Acute Illness characteristics:
+table1_mc, by(splenectomy) ///
+		vars( ///
 		pesi_pe conts %4.0f \ ///
-		admissionlocation cat %4.0f \ ///
-		hospitallosdays conts %4.0f \ ///
-		iculos conts %4.0f \ ///
+		highest_hr conts %4.2f \ ///
+		lowest_sbp conts %4.2f \ ///
+		lowest_dbp conts %4.2f \ ///
+		lowest_map conts %4.2f \ ///
+		max_resp cat %4.0f \ ///
 		troponin_max conts %4.2f \ ///
 		bnp_max conts %4.0f \ ///
 		rightheartstrain bin %4.0f \ ///
-		dilatedpulmartery bin %4.0f \ ///
-		rvlvratio_initial1abnormal bin %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/overall by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/phys tte by splenectomy.xlsx", replace)
 
+
+// Outcomes: 
+		
+table1_mc, by(splenectomy) ///
+		vars( ///
+		admissionlocation cat %4.0f \ ///
+		hospitallosdays conts %4.0f \ ///
+		iculos conts %4.0f \ ///
+		) ///
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/outcomes by splenectomy.xlsx", replace)
+
+		
+		
+		
 		
 //Patient chars
 
@@ -325,8 +519,16 @@ pvenn2 central_darren central_mark, plabel("Darren_Central" "Mark_Central") titl
 graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", as(png) name("Graph") replace 
 
 //Correlation between quanadli scores
-
 corr qanadli_mark qanadli_darren
+
+table1_mc, by(splenectomy) ///
+		vars( ///
+		central_darren bin %4.0f \ ///
+		central_mark bin %4.0f \ ///
+		qanadli_darren conts %4.2f \ ///
+		qanadli_mark conts %4.2f \ ///
+		) ///
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ratings mark darren by splenectomy.xlsx", replace)
 
 //TODO: actually probably want agreement? 
 
