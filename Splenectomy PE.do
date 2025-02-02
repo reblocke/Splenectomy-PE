@@ -14,6 +14,19 @@ Couple data cleaning requests - just so that I don't have to rewrite the data cl
 - ages make into numerical (not a mix of numbers and number+yo)
 - need sex in both groups
 - need bmi in the no splenectomy group 
+
+
+
+
+Main: 
+
+peripheral vs central PE
+
+secondary: restricting to only Emergency
+
+Ignore chronic changes. 
+
+
 */ 
 
 
@@ -53,21 +66,23 @@ cd "Data"
 
 "We have now gotten through the secondary data and added things as you requested for each group (Age, sex, BMI should be there for all pts and made the chronic changes into a 1 or 0 variable).   Also moved the excluded splenectomy patients to a different tab.  "
 
-Age, gender, BMI first ; subsequent analysis may include  - 
+- Age, gender, BMI first ; subsequent analysis may include  - 
 
-Race/ethnicity
-Presence/absence of provoking factors for PE or CTEPH
-Cancer, immobility/injury within 30d, surgery within 30d, clotting d/o, chf, chronic lung dz, afib, pregnancy, estrogen use, obesity, CVC (central or picc line) presence within 30d), thyroid disease, prior VTE of any kind, antiphospholipid ab, lupus anticoagulant, factor VIII level if present, non-O blood group,  inflammatory bowel disease)
-DVT present, absent, or unknown based on chart records within 1 week of incident event.  
-VS related to PE hospitalization, PESI score at dx
-Hospital admission location, LOS in ICU and hospital
-PE therapy received
-RV strain on CTA
-Highest BNP and trop during hospitalization
-Echo findings/RHC findings with PH
-Eventual diagnosis of CTEPH, CTED or chronic PE on imaging
-History of splenectomy (as well as age at splenectomy and indication for it if present)
-Estrogen use
+- Race/ethnicity
+- Presence/absence of provoking factors for PE or CTEPH
+- Cancer, immobility/injury within 30d, surgery within 30d, clotting d/o, chf, chronic lung dz, afib, pregnancy, estrogen use, obesity, CVC (central or picc line) presence within 30d), thyroid disease, prior VTE of any kind, antiphospholipid ab, lupus anticoagulant, factor VIII level if present, non-O blood group,  inflammatory bowel disease)
+- DVT present, absent, or unknown based on chart records within 1 week of incident event.  
+- VS related to PE hospitalization, PESI score at dx
+- Hospital admission location, LOS in ICU and hospital
+- PE therapy received
+- RV strain on CTA
+- Highest BNP and trop during hospitalization
+- Echo findings/RHC findings with PH
+- Eventual diagnosis of CTEPH, CTED or chronic PE on imaging
+- History of splenectomy (as well as age at splenectomy and indication for it if present)
+- Estrogen use
+
+
 
 */ 
 
@@ -82,11 +97,13 @@ Estrogen use
 
 
 import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
-drop if missing(age_peyears)
+
+drop if missing(pe_diagnosis_dt)  // drop rows not corresponding to a pt 
 keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
 
 destring chronicchanges1yes0no, replace
 rename age_peyears age 
+destring age, replace 
 rename centraldarrensreview central_darren
 replace central_darren = 0 if missing(central_darren)
 rename qanadlifinal qanadli_darren
@@ -112,9 +129,11 @@ destring troponin_max, replace force
 save splenectomy, replace
 clear
 
+//new ones PA diameter (mm)	Aortic Diameter (mm)	PA/A	PA Enlargement (1=yes, 0 =no) >27f, >29m	Increased PA/A (>0.9)	PA enlargement or Increased PA/A	PE Diagnosis setting (outpt, inpt, ED)	ED PE Dx (1 = yes)
+
 
 import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
-drop if missing(age_peyears)
+drop if missing(pe_diagnosis_dt) // drop rows not corresponding to a pt 
 keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal
 
 rename age_peyears age
@@ -230,8 +249,7 @@ rename rvlvratio_initial1abnormal_bin rvlvratio_initial1abnormal
 label variable rvlvratio_initial1abnormal "Abnormal RV:LV?"
 
 
-
-//Generate Averages 
+//Generate Average of raters var
 * Create a new variable "qanadli" that is the average of "qanadli_mark" and "qanadli_darren"
 generate qanadli = (qanadli_mark + qanadli_darren) / 2
 label variable qanadli "Qanadli Score (Avg)"
@@ -245,9 +263,11 @@ recode central (0=1) (1=0), generate(peripheral)
 label variable peripheral "Peripheral PE"
 
 save full_db, replace
-export excel using "splenectomy_pe_data.xlsx", replace firstrow(variables)
+export excel using "cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
 //use subsample_db_5_perc
 cd ..
+
+
 
 
 
@@ -278,6 +298,27 @@ table1_mc, by(splenectomy) ///
 		) ///
 		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/overall by splenectomy.xlsx", replace)
 
+		
+//Patient chars
+
+// [ ] add prior PE etc? 
+
+
+//Presentation chars
+
+//add wells?
+
+
+//PE chars
+
+
+//Outcomes		
+
+//add therapy? 
+		
+		
+		
+		
 //Kappa Score of Agreement
 kap central_darren central_mark, tab
 pvenn2 central_darren central_mark, plabel("Darren_Central" "Mark_Central") title("Agreement in Central Determination")
@@ -286,6 +327,8 @@ graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", a
 //Correlation between quanadli scores
 
 corr qanadli_mark qanadli_darren
+
+//TODO: actually probably want agreement? 
 
 regress qanadli_mark qanadli_darren
 local rsquared = round(e(r2), 0.01)
@@ -312,7 +355,9 @@ ysize(5) ///
 scheme(white_tableau)
 graph export "Results and Figures/$S_DATE/Qanadli by Splenectomy Status.png", as(png) name("Graph") replace 
 
-//Association between splenectomy and quanadli average
+
+
+//Association between splenectomy and quanadli average - decide on method
 
 //poisson? 
 
@@ -336,13 +381,7 @@ logistic peripheral splenectomy age male_sex
 logistic peripheral splenectomy age male_sex bmi_pe
 estimates store peripheral
 
-//chronic changes
 
-tab splenectomy chronic_changes, row
-logistic chronic_changes splenectomy
-logistic chronic_changes splenectomy age male_sex
-logistic chronic_changes splenectomy age male_sex bmi_pe
-estimates store chronic_changes
 
 
 // pesi_pe "PESI"
@@ -358,6 +397,8 @@ xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
 graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+
+
 
 // admissionlocation "Admit Location"
 //catplot
@@ -451,6 +492,18 @@ graph export "Results and Figures/$S_DATE/Peripheral Logistic Regression.png", a
 
 
 
+
+
+
+/* Not utilized as not confident enough in the ratings, particularly subjective */ 
+
+//chronic changes
+
+tab splenectomy chronic_changes, row
+logistic chronic_changes splenectomy
+logistic chronic_changes splenectomy age male_sex
+logistic chronic_changes splenectomy age male_sex bmi_pe
+estimates store chronic_changes
 
 coefplot chronic_changes, eform ///
 drop(_cons) ///
