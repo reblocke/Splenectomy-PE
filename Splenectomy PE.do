@@ -83,15 +83,7 @@ cd "Data"
 - Eventual diagnosis of CTEPH, CTED or chronic PE on imaging
 - History of splenectomy (as well as age at splenectomy and indication for it if present)
 - Estrogen use
-
-
-
 */ 
-
-//Nussance variables: mrn pe_diagnosis imagesavailable ctimagesavailabecpepostspl abletodeterminelocation1 qanadlimath centralmarksreview notes w pe_diagnosis_dt 
-//w = duplicate of male gender
-//Maybe useful? categorical ratings: location (and marks = centralmarksreview) - just central vs not in no splenectomy cohort.
-
 
 //Splenectomy: procedure_dt procedure_dsp 
 //PE: pe_diagnosis_dt_reviseddw (= same?) radiologydescription dweval
@@ -99,16 +91,10 @@ cd "Data"
 //TODO: Calculate time from Procedure_dt to pe_diagnosis_dt
 
 //Echo params: ef la_area septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho
-
-//[ ] wells:  - no #1, curr DVT signs, most likely, hemoptysis
 //workup: antiphospholipidab lupusanticoagulant factorviii nonobloodgroup 
 //setting: pediagnosissettingoutptinp edpedx1yes
+//Outcomes: petherapyactpamechanical
 
-
-//Done
-//Pt chars: raceethnicity
-//Presentation:  dmissionlocation pesi_pe bnp_max troponin_max 
-//Outcomes: petherapyactpamechanical hospitallosdays iculos  
 
 
 import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
@@ -225,6 +211,8 @@ append using splenectomy.dta
 
 //Variable Defintions
 
+label define binary_lab 0 "no" 1 "yes"
+
 label variable age "Age (years)"
 label variable male_sex "Male Sex"
 label define male_lab 0 "Female" 1 "Male"
@@ -281,7 +269,7 @@ replace rightheartstrain_binary = 1 if rightheartstrain == "yes"
 replace rightheartstrain_binary = 0 if rightheartstrain == "no"
 drop rightheartstrain
 rename rightheartstrain_binary rightheartstrain
-label variable rightheartstrain "R Heart Strain?"
+label variable rightheartstrain "R Heart Strain? (CT)"
 
 replace hxofpriorpedvt = "yes" if hxofpriorpedvt == "DVT"
 replace hxofpriorpedvt = "yes" if lower(substr(hxofpriorpedvt, 1, 3)) == "yes"
@@ -317,10 +305,69 @@ replace wells_surg = 1 if surgerywithin30d == "yes"
 drop surgerywithin30d 
 label variable wells_surg "Surgery w/n 30d"
 
+replace sicklecell = strtrim(sicklecell)
+encode sicklecell, label(binary_lab) generate(sickle_cell)
+drop sicklecell
+label variable sickle_cell "Sickle Cell"
 
-//sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease
+replace clottingdisorder = strtrim(clottingdisorder)
+replace clottingdisorder = "yes" if lower(substr(clottingdisorder, 1, 3)) == "yes"
+replace clottingdisorder = "yes" if lower(substr(clottingdisorder, 1, 3)) == "fac"
+replace clottingdisorder = "yes" if lower(substr(clottingdisorder, 1, 3)) == "itp"
+encode clottingdisorder, label(binary_lab) generate(clotting_disorder)
+drop clottingdisorder
+label variable clotting_disorder "Clotting Disorder (including ITP, AIHA)"
 
+gen chf_temp = strtrim(chf)
+drop chf
+encode chf_temp, label(binary_lab) generate(chf)
+drop chf_temp
+label variable chf "Congestive Heart Failure"
 
+replace chroniclungdisease = strtrim(chroniclungdisease)
+replace chroniclungdisease = "yes" if lower(substr(chroniclungdisease, 1, 3)) == "yes"
+replace chroniclungdisease = "yes" if lower(substr(chroniclungdisease, 1, 3)) == "pul"
+encode chroniclungdisease, label(binary_lab) generate(chronic_lung)
+drop chroniclungdisease
+label variable chronic_lung "Chronic Lung Disease (inc. asthma, OSA, etc.)"
+
+replace afib = strtrim(afib)
+encode afib, label(binary_lab) generate(a_fib)
+drop afib
+label variable a_fib "Atrial Fibrillation"
+
+replace pregnancy = strtrim(pregnancy)
+encode pregnancy, label(binary_lab) generate(curr_preg)
+drop pregnancy 
+label variable curr_preg "Current Pregnancy"
+
+replace estrogenuse = strtrim(estrogenuse)
+encode estrogenuse, label(binary_lab) generate(curr_estr)
+drop estrogenuse 
+label variable curr_estr "Current Exogenous Estrogen Use"
+
+replace obesity = strtrim(obesity)
+encode obesity, label(binary_lab) generate(obesity_dx)
+drop obesity
+label variable obesity_dx "Obesity diagnosis"
+
+replace cvcwithin30d = strtrim(cvcwithin30d)
+encode cvcwithin30d, label(binary_lab) generate(recent_cvc)
+drop cvcwithin30d
+label variable recent_cvc "Recent Central Line (30d)"
+
+replace thyroiddisease = strtrim(thyroiddisease)
+replace thyroiddisease = "no" if thyroiddisease == "on"
+replace thyroiddisease = "yes" if lower(substr(thyroiddisease, 1, 3)) == "yes"
+encode thyroiddisease, label(binary_lab) generate(thyroid_dz)
+drop thyroiddisease
+label variable thyroid_dz "Thyroid Disease"
+
+replace inflammatoryboweldisease = strtrim(inflammatoryboweldisease)
+replace inflammatoryboweldisease = "no" if lower(substr(inflammatoryboweldisease, 1, 3)) == "sus"
+encode inflammatoryboweldisease, label(binary_lab) generate(ibd)
+drop inflammatoryboweldisease
+label variable ibd "Inflammatory Bowel Disease"
 
 
 rename highesthr_pe highest_hr 
@@ -434,11 +481,21 @@ table1_mc, by(splenectomy) ///
 		prior_pe_dvt bin %4.0f \ ///
 		prior_other_vte bin %4.0f \ ///
 		active_malig bin %4.0f \ ///
-		wells_surg bin %4.0f \ ///
-		wells_immobility bin %4.0f \ ///
+		sickle_cell bin %4.0f \ ///
+		clotting_disorder bin %4.0f \ ///
+		chf bin %4.0f \ ///
+		chronic_lung bin %4.0f \ ///
+		a_fib bin %4.0f \ ///
+		curr_preg bin %4.0f \ ///
+		obesity_dx bin %4.0f \ ///
+		thyroid_dz bin %4.0f \ ///
+		ibd bin %4.0f \ ///
 		) ///
 		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/baseline chars by splenectomy.xlsx", replace)
-
+	
+	
+bysort obesity_dx: summ bmi_pe, detail
+	
 		
 // PE/Physiologic  Characteristics: 
 
@@ -466,6 +523,12 @@ logistic high_pa_aa male age splenectomy, or //controlling for age, sex actually
 // Acute Illness characteristics:
 table1_mc, by(splenectomy) ///
 		vars( ///
+		active_malig bin %4.0f \ ///
+		wells_surg bin %4.0f \ ///
+		wells_immobility bin %4.0f \ ///
+		recent_cvc bin %4.0f \ ///
+		curr_preg bin %4.0f \ ///
+		curr_estr bin %4.0f \ ///
 		pesi_pe conts %4.0f \ ///
 		highest_hr conts %4.2f \ ///
 		lowest_sbp conts %4.2f \ ///
@@ -509,7 +572,9 @@ table1_mc, by(splenectomy) ///
 //Outcomes		
 
 //add therapy? 
-		
+
+
+*** Correcting for illness severity = PESI-adjusted?
 		
 		
 		
