@@ -19,8 +19,8 @@ capture log close
 * Load data
 clear
 
-//cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
-cd "/Users/reblocke/Research/Splenectomy-PE"
+cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
+//cd "/Users/reblocke/Research/Splenectomy-PE"
 
 capture mkdir "Results and Figures"
 capture mkdir "Results and Figures/$S_DATE/" //make new folder for figure output if needed

@@ -15,8 +15,8 @@ cd ..
 */ 
 
 capture log close
-//cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
-cd "/Users/reblocke/Research/Splenectomy-PE"
+cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
+//cd "/Users/reblocke/Research/Splenectomy-PE"
 
 capture mkdir "Results and Figures"
 capture mkdir "Results and Figures/$S_DATE/" //make new folder for figure output if needed
@@ -205,6 +205,9 @@ table1_mc if ed_encounter, by(splenectomy) ///
 
 //Very high rates of enlargment. 				
 logistic high_pa_aa male age splenectomy, or //controlling for age, sex actually makes more dramatic.
+
+// Penalized regression - may be more valid to use w small samples.
+firthlogit high_pa_aa male age splenectomy, or 
 					
 /* 	
 Acute Illness characteristics:
