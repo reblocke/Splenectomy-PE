@@ -558,9 +558,6 @@ graph export "Results and Figures/$S_DATE/PA_AA linear Regression.png", as(png) 
 
 
 
-
-
-
 /* Not utilized as not confident enough in the ratings, particularly subjective */ 
 
 //chronic changes
