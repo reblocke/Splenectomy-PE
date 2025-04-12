@@ -44,7 +44,7 @@ Assess Agreement Between Raters
 */ 
 	
 kap central_darren central_mark, tab
-kappaetc central_darren central_mark, tab benchmark(d) showscale
+//kappaetc central_darren central_mark, tab benchmark(d)  showscale
 
 pvenn2 central_darren central_mark, plabel("Central_DW" "Central_MD") title("Agreement in Central Determination")
 graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", as(png) name("Graph") replace 
