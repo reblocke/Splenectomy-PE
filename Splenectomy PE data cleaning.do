@@ -47,7 +47,8 @@ import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow ca
 
 drop if missing(pe_diagnosis_dt)  // drop rows not corresponding to a pt 
 
-keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup pediagnosissettingoutptinp edpedx1yes petherapyactpamechanical procedure_dt pe_diagnosis_dt_reviseddw
+//new vars Apr 2025 analysis (only kept a few): dvtworkupdone1yes dvtworkuppositive rvwidthabovetvmm lvwidthabovemvmm rvlvratio rvlv1 pesymptomduration2weeks
+keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup pediagnosissettingoutptinp edpedx1yes petherapyactpamechanical procedure_dt pe_diagnosis_dt_reviseddw dvtworkupdone1yes dvtworkuppositive rvlvratio pesymptomduration2weeks
 
 destring chronicchanges1yes0no, replace
 rename age_peyears age 
@@ -78,13 +79,21 @@ replace edpedx1yes = 0 if missing(edpedx1yes)
 gen years_since_splenectomy = (pe_diagnosis_dt_reviseddw - procedure_dt) / 365.25
 drop procedure_dt
 
+replace dvtworkupdone1yes = 0 if missing(dvtworkupdone1yes)
+rename dvtworkupdone1yes dvt_workup
+replace dvtworkuppositive = 0 if missing(dvtworkuppositive) & (dvt_workup == 1) //leave missing if no workup
+rename dvtworkuppositive dvt_found
+destring pesymptomduration2weeks, replace force
+rename pesymptomduration2weeks symptoms_two_weeks
+
 save splenectomy, replace
 clear
 
 import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
 drop if missing(pe_diagnosis_dt) // drop rows not corresponding to a pt 
 
-keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup petherapyactpamechanical pe_diagnosis_dt_reviseddw
+//new vars: dvtworkupwithin2weeksofpe dvtworkupdone1yes dvtworkuppositive rvwidthbelowtvmm lvwidthbelowmvmm rvlvratio rvlv1 ctephdiagnosis symptomduration2weeksattime
+keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup petherapyactpamechanical pe_diagnosis_dt_reviseddw dvtworkupdone1yes dvtworkuppositive rvlvratio symptomduration2weeksattime
 
 rename age_peyears age
 replace dwpelocation = lower(trim(dwpelocation))
@@ -123,6 +132,14 @@ replace lowestbp_pemap = "" if lowestbp_pemap == "arrest"
 rename trvelocity_initialms trvelocity_initial 
 rename raarea_initialcm2 raarea_initial
 gen edpedx1yes = 1
+
+//dvtworkupdone1yes dvtworkuppositive rvlvratio symptomduration2weeksattime
+replace dvtworkupdone1yes = 0 if missing(dvtworkupdone1yes)
+rename dvtworkupdone1yes dvt_workup
+replace dvtworkuppositive = 0 if missing(dvtworkuppositive) & (dvt_workup == 1) //leave missing if no workup
+rename dvtworkuppositive dvt_found
+destring symptomduration2weeksattime, replace force
+rename symptomduration2weeksattime symptoms_two_weeks
 
 save no_splenectomy, replace
 
@@ -514,6 +531,30 @@ label variable no_treatment "Received No Treatment for PE"
 
 drop petherapyactpamechanical
 
+label variable dvt_workup "DVT workup performed?"
+label variable dvt_found "DVT found"
+label variable rvlvratio "RV to LV ratio"
+label variable symptoms_two_weeks "Symptoms present for 2 or more weeks?"
+replace symptoms_two_weeks = 0 if missing(symptoms_two_weeks)
+
+
+label values rvlvratio_initial1abnormal binary_lab
+label values dilatedpulmartery binary_lab 
+label values rightheartstrain binary_lab
+label values prior_pe_dvt binary_lab
+label values prior_other_vte binary_lab
+label values active_malig binary_lab
+label values wells_immobility binary_lab
+label values wells_surg binary_lab
+label values chronic_changes binary_lab
+label values central_darren binary_lab
+label values central_mark binary_lab
+label values symptoms_two_weeks binary_lab
+label values dvt_found binary_lab
+label values dvt_workup binary_lab
+label values pa_enlarged binary_lab
+label values high_pa_aa binary_lab
+label values pa_enlarged_by_d_or_ratio binary_lab
 
 //Generate Rating Averages (of DW and MD)
 * Create a new variable "qanadli" that is the average of "qanadli_mark" and "qanadli_darren"
