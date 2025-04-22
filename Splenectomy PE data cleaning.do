@@ -183,6 +183,12 @@ label variable high_pa_aa "PA:AA > 0.9?"
 rename paenlargementorincreasedpaa pa_enlarged_by_d_or_ratio
 label variable pa_enlarged_by_d_or_ratio "PA Enlargment by diam or ratio?"
 
+gen pa_aa_over_1 = .
+replace pa_aa_over_1 = 1 if pa_d/aa_d >= 1
+replace pa_aa_over_1 = 0 if pa_d/aa_d < 1
+label variable pa_aa_over_1 "PA:AA > 1"
+label values pa_aa_over_1 binary_lab
+
 rename pe_diagnosis_dt_reviseddw pe_date
 label variable pe_date "PE Date"
 
@@ -567,6 +573,11 @@ label variable central "Central? (either rater)"
 
 recode central (0=1) (1=0), generate(peripheral)
 label variable peripheral "Peripheral PE"
+
+
+gen is_white = (lower(raceethnicity) == "white")
+label variable is_white "White Race?"
+label values is_white binary_lab
 
 save full_db, replace
 export excel using "cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
