@@ -365,6 +365,9 @@ drop dilatedpulmartery
 rename dilatedpulmartery_binary dilatedpulmartery
 label variable dilatedpulmartery "Dilated PA on CT?"
 
+drop rvlvratio_initial1abnormal
+//Old code for radiologist read 
+/*
 replace rvlvratio_initial1abnormal = lower(strtrim(rvlvratio_initial1abnormal))
 replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "n/a"
 replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "not listed"
@@ -373,10 +376,13 @@ replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "indete
 replace rvlvratio_initial1abnormal = "0.9" if rvlvratio_initial1abnormal == "<1" //normal RV:LV < 1
 replace rvlvratio_initial1abnormal = "1.1" if rvlvratio_initial1abnormal == ">1"
 destring rvlvratio_initial1abnormal, replace force
+*/ 
 gen rvlvratio_initial1abnormal_bin = .
-replace rvlvratio_initial1abnormal_bin = 1 if !missing(rvlvratio_initial1abnormal) & rvlvratio_initial1abnormal > 1
-replace rvlvratio_initial1abnormal_bin = 0 if !missing(rvlvratio_initial1abnormal) &rvlvratio_initial1abnormal < 1
-drop rvlvratio_initial1abnormal
+//replace rvlvratio_initial1abnormal_bin = 1 if !missing(rvlvratio_initial1abnormal) & rvlvratio_initial1abnormal > 1
+replace rvlvratio_initial1abnormal_bin = 1 if rvlvratio >= 1
+//replace rvlvratio_initial1abnormal_bin = 0 if !missing(rvlvratio_initial1abnormal) &rvlvratio_initial1abnormal < 1
+replace rvlvratio_initial1abnormal = 0 if rvlvratio < 1
+//drop rvlvratio_initial1abnormal
 rename rvlvratio_initial1abnormal_bin rvlvratio_initial1abnormal
 label variable rvlvratio_initial1abnormal "Abnormal RV:LV?"
 
