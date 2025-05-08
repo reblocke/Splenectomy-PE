@@ -27,3 +27,6 @@ Data/
 Thumbs.db
 *.log
 *.stswp
+.Rhistory
+/splenectomy_analysis_files/figure-html
+/splenectomy_analysis_files/libs

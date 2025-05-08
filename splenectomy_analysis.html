@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.30">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>splenectomy_analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="splenectomy_analysis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="splenectomy_analysis_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="splenectomy_analysis_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="splenectomy_analysis_files/libs/quarto-html/popper.min.js"></script>
+<script src="splenectomy_analysis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="splenectomy_analysis_files/libs/quarto-html/anchor.min.js"></script>
+<link href="splenectomy_analysis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="splenectomy_analysis_files/libs/quarto-html/quarto-syntax-highlighting-de070a7b0ab54f8780927367ac907214.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="splenectomy_analysis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="splenectomy_analysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="splenectomy_analysis_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<div id="3d90d2f4" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> stata_setup</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>stata_setup.config(<span class="vs">r"/Applications/Stata/"</span>, <span class="st">"be"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      Stata 18.0
+___/   /   /___/   /   /___/       BE—Basic Edition
+
+ Statistics and Data Science       Copyright 1985-2023 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 35-user network perpetual
+Serial number: 301806305068
+  Licensed to: Brian Locke
+               University of Utah
+
+Notes:
+      1. Unicode is supported; see help unicode_advice.</code></pre>
+</div>
+</div>
+<p>Pull in dataset and retain only cases that would have been eligible for the control group: admits captured in our system</p>
+<div id="b667342b" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>clear</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>use <span class="st">"data/full_db"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>drop <span class="cf">if</span> admissionlocation <span class="op">==</span> <span class="st">"Outpatient"</span> </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>drop <span class="cf">if</span> admissionlocation <span class="op">==</span> <span class="st">"OSH"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>capture mkdir <span class="st">"Results and Figures"</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>capture mkdir <span class="st">"Results and Figures/$S_DATE/"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. clear
+
+. use "data/full_db"
+
+. drop if admissionlocation == "Outpatient" 
+(9 observations deleted)
+
+. drop if admissionlocation == "OSH"
+(2 observations deleted)
+
+. capture mkdir "Results and Figures"
+
+. capture mkdir "Results and Figures/$S_DATE/"
+
+. </code></pre>
+</div>
+</div>
+<section id="summary-tables" class="level2">
+<h2 class="anchored" data-anchor-id="summary-tables">Summary Tables</h2>
+<p>stratified by splenectomy status</p>
+<section id="demographics-age-gender-bmi" class="level3">
+<h3 class="anchored" data-anchor-id="demographics-age-gender-bmi">Demographics (age, gender, BMI)</h3>
+<div id="95cf9dc4" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>table1_mc, by(splenectomy) <span class="op">///</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="bu">vars</span>( <span class="op">///</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        age conts <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        male_sex <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        is_white <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        bmi_pe conts <span class="op">%</span><span class="fl">4.1</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        years_since_splenectomy conts <span class="op">%</span><span class="fl">4.1</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">///</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        percent_n percsign(<span class="st">"%"</span>) iqrmiddle(<span class="st">","</span>) sdleft(<span class="st">" (±"</span>) sdright(<span class="st">")"</span>) missing onecol saving(<span class="st">"Results and Figures/$S_DATE/demographics by splenectomy.xlsx"</span>, replace)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. 
+. table1_mc, by(splenectomy) ///
+&gt;                 vars( ///
+&gt;                 age conts %4.0f \ ///
+&gt;                 male_sex bin %4.0f \ ///
+&gt;                 is_white bin %4.0f \ ///
+&gt;                 bmi_pe conts %4.1f \ ///
+&gt;                 years_since_splenectomy conts %4.1f \ ///
+&gt;                 ) ///
+&gt;                 percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(
+&gt; ")") missing onecol saving("Results and Figures/$S_DATE/demographics by splen
+&gt; ectomy.xlsx", replace)
+
+  +----------------------------------------------------------+
+  | factor                             N_0   N_1   m_0   m_1 |
+  |----------------------------------------------------------|
+  | Age (years)                        100    40     0     0 |
+  |----------------------------------------------------------|
+  | Male Sex                           100    40     0     0 |
+  |----------------------------------------------------------|
+  | White Race?                        100    40     0     0 |
+  |----------------------------------------------------------|
+  | BMI                                 99    21     1    19 |
+  |----------------------------------------------------------|
+  | Years between Splenectomy and PE     0    40   100     0 |
+  +----------------------------------------------------------+
+   N_ ... #records used below,   m_ ... #records not used
+ 
+  +----------------------------------------------------------------------------
+&gt; ------+
+  |                                    No Splenectomy     Splenectomy        p-
+&gt; value |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  |                                    N=100              N=40                 
+&gt;       |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  | Age (years)                        61 (52,73)         56 (41,66)          0
+&gt; .013  |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  | Male Sex                           48% (48)           35% (14)            0
+&gt; .16   |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  | White Race?                        93% (93)           100% (40)           0
+&gt; .086  |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  | BMI                                31.1 (26.3,36.5)   28.8 (25.3,37.7)    0
+&gt; .64   |
+  |----------------------------------------------------------------------------
+&gt; ------|
+  | Years between Splenectomy and PE                      6.6 (0.2,19.1)       
+&gt;       |
+  +----------------------------------------------------------------------------
+&gt; ------+
+Data are presented as median (IQR) for continuous measures, and % (n) for categ
+&gt; orical measures.
+ 
+file Results and Figures/ 6 May 2025/demographics by splenectomy.xlsx saved
+
+. </code></pre>
+</div>
+</div>
+</section>
+<section id="admit-characteristics-floor-vs-icu-los" class="level3">
+<h3 class="anchored" data-anchor-id="admit-characteristics-floor-vs-icu-los">Admit characteristics (floor vs ICU, LOS)</h3>
+<div id="3b6578d6" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>table1_mc, by(splenectomy) <span class="op">///</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">vars</span>( <span class="op">///</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        pesi_pe conts <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        admissionlocation cat <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        hospitallosdays conts <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        iculos conts <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">///</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        percent_n percsign(<span class="st">"%"</span>) iqrmiddle(<span class="st">","</span>) sdleft(<span class="st">" (±"</span>) sdright(<span class="st">")"</span>) missing onecol saving(<span class="st">"Results and Figures/$S_DATE/admit chars by splenectomy.xlsx"</span>, replace) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. table1_mc, by(splenectomy) ///
+&gt;                 vars( ///
+&gt;                 pesi_pe conts %4.0f \ ///
+&gt;                 admissionlocation cat %4.0f \ ///
+&gt;                 hospitallosdays conts %4.0f \ ///
+&gt;                 iculos conts %4.0f \ ///
+&gt;                 ) ///
+&gt;                 percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(
+&gt; ")") missing onecol saving("Results and Figures/$S_DATE/admit chars by splene
+&gt; ctomy.xlsx", replace)        
+
+  +----------------------------------------+
+  | factor           N_0   N_1   m_0   m_1 |
+  |----------------------------------------|
+  | PESI             100    40     0     0 |
+  |----------------------------------------|
+  | Admit Location   100    40     0     0 |
+  |----------------------------------------|
+  | Hospital LOS     100    40     0     0 |
+  |----------------------------------------|
+  | ICU LOS          100    40     0     0 |
+  +----------------------------------------+
+   N_ ... #records used below,   m_ ... #records not used
+ 
+  +---------------------------------------------------------+
+  |                  No Splenectomy   Splenectomy   p-value |
+  |---------------------------------------------------------|
+  |                  N=100            N=40                  |
+  |---------------------------------------------------------|
+  | PESI             97 (75,120)      89 (66,111)    0.097  |
+  |---------------------------------------------------------|
+  | Admit Location                                   0.54   |
+  |    ICU           19% (19)         12% (5)               |
+  |    Rehab          1% (1)           2% (1)               |
+  |    Ward          80% (80)         85% (34)              |
+  |---------------------------------------------------------|
+  | Hospital LOS     4 (3,6)          4 (2,7)        0.74   |
+  |---------------------------------------------------------|
+  | ICU LOS          0 (0,0)          0 (0,0)        0.84   |
+  +---------------------------------------------------------+
+Data are presented as median (IQR) for continuous measures, and % (n) for categ
+&gt; orical measures.
+ 
+file Results and Figures/ 6 May 2025/admit chars by splenectomy.xlsx saved
+
+. </code></pre>
+</div>
+</div>
+<div id="9b62c6b8" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> pesi_pe <span class="st">"PESI"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity pesi_pe <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="dv">10</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">240</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>kdensity pesi_pe <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="dv">10</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">240</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">2</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(large)) <span class="op">///</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="dv">0</span>(<span class="dv">40</span>)<span class="dv">240</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"PESI"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"PESI Score by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>graph export <span class="st">"Results and Figures/$S_DATE/PESI by Splenectomy Status.png"</span>, <span class="im">as</span>(png) name(<span class="st">"Graph"</span>) replace </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. // pesi_pe "PESI"
+. twoway kdensity pesi_pe if splenectomy == 0, recast(area) fcolor(navy%05) lco
+&gt; lor(navy) lpattern(solid) lwidth(*2.5) bwidth(10) range(0 240) || ///
+&gt; kdensity pesi_pe if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cr
+&gt; anberry) lpattern(solid)  lwidth(*2.5) bwidth(10) range(0 240) ||, ///
+&gt; legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(
+&gt; large)) ///
+&gt; xlabel(0(40)240, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("PESI", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("PESI Score by Splenectomy Status", size(large)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as
+&gt; (png) name("Graph") replace 
+(file Results and Figures/ 6 May 2025/PESI by Splenectomy Status.png not found)
+file Results and Figures/ 6 May 2025/PESI by Splenectomy Status.png written in 
+&gt; PNG format
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-6-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="5ba29f72" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> variable hospitallosdays <span class="st">"Hospital LOS"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity hospitallosdays <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="dv">5</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">60</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>kdensity hospitallosdays <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="dv">5</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">60</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">2</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(large)) <span class="op">///</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="dv">0</span>(<span class="dv">10</span>)<span class="dv">60</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Hospital LOS"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"Hospital LOS by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. // variable hospitallosdays     "Hospital LOS"
+. twoway kdensity hospitallosdays if splenectomy == 0, recast(area) fcolor(navy
+&gt; %05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(5) range(0 60) || ///
+&gt; kdensity hospitallosdays if splenectomy == 1, recast(area) fcolor(erose%05) l
+&gt; color(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(5) range(0 60) ||, ///
+&gt; legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(
+&gt; large)) ///
+&gt; xlabel(0(10)60, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("Hospital LOS", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("Hospital LOS by Splenectomy Status", size(large)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-7-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="evidence-of-rv-strain-trop-bnp-rvlv-ratio-or-ph-pa-diameter" class="level3">
+<h3 class="anchored" data-anchor-id="evidence-of-rv-strain-trop-bnp-rvlv-ratio-or-ph-pa-diameter">Evidence of RV strain (trop, BNP, RV/LV ratio) or PH (PA diameter)</h3>
+<div id="c958411c" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>table1_mc, by(splenectomy) <span class="op">///</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">vars</span>( <span class="op">///</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        pa_d conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        pa_aa conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        pa_enlarged <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>        high_pa_aa <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        rvlvratio conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        rvlvratio_initial1abnormal <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        rightheartstrain <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        rvsp conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        septal_flattening <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        troponin_max conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        bnp_max conts <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">///</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        percent_n percsign(<span class="st">"%"</span>) iqrmiddle(<span class="st">","</span>) sdleft(<span class="st">" (±"</span>) sdright(<span class="st">")"</span>) missing onecol saving(<span class="st">"Results and Figures/$S_DATE/rv strain by splenectomy.xlsx"</span>, replace)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. table1_mc, by(splenectomy) ///
+&gt;                 vars( ///
+&gt;                 pa_d conts %4.2f \ ///
+&gt;                 pa_aa conts %4.2f \ ///
+&gt;                 pa_enlarged bin %4.0f \ ///
+&gt;                 high_pa_aa bin %4.0f \ ///
+&gt;                 rvlvratio conts %4.2f \ ///
+&gt;                 rvlvratio_initial1abnormal bin %4.0f \ ///
+&gt;                 rightheartstrain bin %4.0f \ ///
+&gt;                 rvsp conts %4.2f \ ///
+&gt;                 septal_flattening bin %4.0f \ ///
+&gt;                 troponin_max conts %4.2f \ ///
+&gt;                 bnp_max conts %4.0f \ ///
+&gt;                 ) ///
+&gt;                 percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(
+&gt; ")") missing onecol saving("Results and Figures/$S_DATE/rv strain by splenect
+&gt; omy.xlsx", replace)
+
+  +----------------------------------------------------------------------------
+&gt; +
+  | factor                                               N_0   N_1   m_0   m_1 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | Pulm Art diameter (mm)                               100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | PA to AA ratio                                       100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | PA Enlarged? (&gt;27 mm fem; &gt;29 mm male)               100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | PA:AA &gt; 0.9?                                         100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | RV to LV ratio                                       100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | Abnormal RV:LV?                                      100    40     0     0 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | R Heart Strain? (CT)                                 100    39     0     1 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | Right Ventricular Systolic Pressure (mmHg) on Echo    50    15    50    25 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | Septal Flattenening on Echo?                          70    19    30    21 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | Troponin (max)                                        83    25    17    15 
+&gt; |
+  |----------------------------------------------------------------------------
+&gt; |
+  | BNP (max)                                             46    17    54    23 
+&gt; |
+  +----------------------------------------------------------------------------
+&gt; +
+   N_ ... #records used below,   m_ ... #records not used
+ 
+  +----------------------------------------------------------------------------
+&gt; ------------------------------+
+  |                                                      No Splenectomy        
+&gt; Splenectomy           p-value |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  |                                                      N=100                 
+&gt; N=40                          |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | Pulm Art diameter (mm)                               29.50 (27.60,32.25)   
+&gt; 30.25 (26.65,33.30)    0.77   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | PA to AA ratio                                       0.95 (0.89,1.03)      
+&gt; 0.95 (0.83,1.06)       0.65   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | PA Enlarged? (&gt;27 mm fem; &gt;29 mm male)               71% (71)              
+&gt; 68% (27)               0.68   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | PA:AA &gt; 0.9?                                         71% (71)              
+&gt; 52% (21)               0.037  |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | RV to LV ratio                                       1.07 (0.88,1.31)      
+&gt; 1.07 (0.94,1.35)       0.31   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | Abnormal RV:LV?                                      55% (55)              
+&gt; 70% (28)               0.10   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | R Heart Strain? (CT)                                 16% (16)              
+&gt; 23% (9)                0.33   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | Right Ventricular Systolic Pressure (mmHg) on Echo   43.50 (31.00,55.00)   
+&gt; 35.30 (26.00,60.00)    0.51   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | Septal Flattenening on Echo?                         19% (13)              
+&gt; 26% (5)                0.46   |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | Troponin (max)                                       0.01 (0.01,0.08)      
+&gt; 0.01 (0.01,0.03)       0.067  |
+  |----------------------------------------------------------------------------
+&gt; ------------------------------|
+  | BNP (max)                                            62 (18,306)           
+&gt; 49 (24,110)            0.70   |
+  +----------------------------------------------------------------------------
+&gt; ------------------------------+
+Data are presented as median (IQR) for continuous measures, and % (n) for categ
+&gt; orical measures.
+ 
+file Results and Figures/ 6 May 2025/rv strain by splenectomy.xlsx saved
+
+. </code></pre>
+</div>
+</div>
+<div id="187c5a6e" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> PA diameter</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity pa_d <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">2.5</span>) <span class="bu">range</span>(<span class="dv">10</span> <span class="dv">45</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>kdensity pa_d <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">2.5</span>) <span class="bu">range</span>(<span class="dv">10</span> <span class="dv">45</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">10</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(medlarge)) <span class="op">///</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="dv">10</span>(<span class="dv">5</span>)<span class="dv">45</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"PA Diameter (mm)"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"PA Diameter by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>graph export <span class="st">"Results and Figures/$S_DATE/PA Diameter by Splenectomy Status.png"</span>, <span class="im">as</span>(png) name(<span class="st">"Graph"</span>) replace</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. // PA diameter
+. twoway kdensity pa_d if splenectomy == 0, recast(area) fcolor(navy%05) lcolor
+&gt; (navy) lpattern(solid) lwidth(*2.5) bwidth(2.5) range(10 45) || ///
+&gt; kdensity pa_d if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranb
+&gt; erry) lpattern(solid)  lwidth(*2.5) bwidth(2.5) range(10 45) ||, ///
+&gt; legend(pos(10) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size
+&gt; (medlarge)) ///
+&gt; xlabel(10(5)45, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("PA Diameter (mm)", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("PA Diameter by Splenectomy Status", size(large)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. graph export "Results and Figures/$S_DATE/PA Diameter by Splenectomy Status.p
+&gt; ng", as(png) name("Graph") replace
+(file Results and Figures/ 6 May 2025/PA Diameter by Splenectomy Status.png not
+&gt;  found)
+file Results and Figures/ 6 May 2025/PA Diameter by Splenectomy Status.png writ
+&gt; ten in PNG format
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-9-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="4c56d2c2" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span>PA:AA</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity pa_aa <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">.05</span>) <span class="bu">range</span>(<span class="fl">0.5</span> <span class="fl">1.5</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>kdensity pa_aa <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">.05</span>) <span class="bu">range</span>(<span class="fl">0.5</span> <span class="fl">1.5</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">2</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(large)) <span class="op">///</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="fl">0.5</span>(<span class="fl">.1</span>)<span class="fl">1.5</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"PA:AA Ratio"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"Pulm Artery to Ascending Aorta ratio, by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>graph export <span class="st">"Results and Figures/$S_DATE/PA to AA by Splenectomy Status.png"</span>, <span class="im">as</span>(png) name(<span class="st">"Graph"</span>) replace</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. //PA:AA
+. twoway kdensity pa_aa if splenectomy == 0, recast(area) fcolor(navy%05) lcolo
+&gt; r(navy) lpattern(solid) lwidth(*2.5) bwidth(.05) range(0.5 1.5) || ///
+&gt; kdensity pa_aa if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cran
+&gt; berry) lpattern(solid)  lwidth(*2.5) bwidth(.05) range(0.5 1.5) ||, ///
+&gt; legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(
+&gt; large)) ///
+&gt; xlabel(0.5(.1)1.5, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("PA:AA Ratio", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("Pulm Artery to Ascending Aorta ratio, by Splenectomy Status", size(lar
+&gt; ge)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. graph export "Results and Figures/$S_DATE/PA to AA by Splenectomy Status.png"
+&gt; , as(png) name("Graph") replace
+(file Results and Figures/ 6 May 2025/PA to AA by Splenectomy Status.png not fo
+&gt; und)
+file Results and Figures/ 6 May 2025/PA to AA by Splenectomy Status.png written
+&gt;  in PNG format
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-10-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Note, really high rate of enlarged PA</p>
+<p>RV:LV</p>
+<div id="102b4925" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> RV LV ratio (new)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity rvlvratio <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">0.25</span>) <span class="bu">range</span>(<span class="fl">0.45</span> <span class="fl">2.55</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>kdensity rvlvratio <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">0.25</span>) <span class="bu">range</span>(<span class="fl">0.45</span> <span class="fl">2.55</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">2</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(medlarge)) <span class="op">///</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="fl">0.45</span>(<span class="fl">.2</span>)<span class="fl">2.55</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"RV to LV ratio"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"RV:LV Ratio by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. // RV LV ratio (new)
+. twoway kdensity rvlvratio if splenectomy == 0, recast(area) fcolor(navy%05) l
+&gt; color(navy) lpattern(solid) lwidth(*2.5) bwidth(0.25) range(0.45 2.55) || ///
+&gt; kdensity rvlvratio if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(
+&gt; cranberry) lpattern(solid)  lwidth(*2.5) bwidth(0.25) range(0.45 2.55) ||, //
+&gt; /
+&gt; legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(
+&gt; medlarge)) ///
+&gt; xlabel(0.45(.2)2.55, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("RV to LV ratio", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("RV:LV Ratio by Splenectomy Status", size(large)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-11-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="clot-characteristics-central-vs.-peripheral-qanadli-score" class="level3">
+<h3 class="anchored" data-anchor-id="clot-characteristics-central-vs.-peripheral-qanadli-score">Clot characteristics (central vs.&nbsp;peripheral, Qanadli score)</h3>
+<div id="f0f3e51d" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>table1_mc, by(splenectomy) <span class="op">///</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">vars</span>( <span class="op">///</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        peripheral <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>        qanadli conts <span class="op">%</span><span class="fl">4.2</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">///</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        percent_n percsign(<span class="st">"%"</span>) iqrmiddle(<span class="st">","</span>) sdleft(<span class="st">" (±"</span>) sdright(<span class="st">")"</span>) missing onecol saving(<span class="st">"Results and Figures/$S_DATE/clot chars by splenectomy.xlsx"</span>, replace)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. table1_mc, by(splenectomy) ///
+&gt;                 vars( ///
+&gt;                 peripheral bin %4.0f \ ///
+&gt;                 qanadli conts %4.2f \ ///
+&gt;                 ) ///
+&gt;                 percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(
+&gt; ")") missing onecol saving("Results and Figures/$S_DATE/clot chars by splenec
+&gt; tomy.xlsx", replace) 
+
+  +---------------------------------------------+
+  | factor                N_0   N_1   m_0   m_1 |
+  |---------------------------------------------|
+  | Peripheral PE         100    40     0     0 |
+  |---------------------------------------------|
+  | Qanadli Score (Avg)   100    40     0     0 |
+  +---------------------------------------------+
+   N_ ... #records used below,   m_ ... #records not used
+ 
+  +---------------------------------------------------------------------+
+  |                       No Splenectomy     Splenectomy        p-value |
+  |---------------------------------------------------------------------|
+  |                       N=100              N=40                       |
+  |---------------------------------------------------------------------|
+  | Peripheral PE         37% (37)           52% (21)            0.093  |
+  |---------------------------------------------------------------------|
+  | Qanadli Score (Avg)   0.22 (0.08,0.48)   0.13 (0.06,0.34)    0.32   |
+  +---------------------------------------------------------------------+
+Data are presented as median (IQR) for continuous measures, and % (n) for categ
+&gt; orical measures.
+ 
+file Results and Figures/ 6 May 2025/clot chars by splenectomy.xlsx saved
+
+. </code></pre>
+</div>
+</div>
+<div id="b7b21a73" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="op">//</span>Association between splenectomy <span class="kw">and</span> quanadli score</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>twoway kdensity qanadli <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">0</span>, recast(area) fcolor(navy<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(navy) lpattern(solid) lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">0.1</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">1</span>) <span class="op">||</span> <span class="op">///</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>kdensity qanadli <span class="cf">if</span> splenectomy <span class="op">==</span> <span class="dv">1</span>, recast(area) fcolor(erose<span class="op">%</span><span class="dv">0</span><span class="er">5</span>) lcolor(cranberry) lpattern(solid)  lwidth(<span class="op">*</span><span class="fl">2.5</span>) bwidth(<span class="fl">0.1</span>) <span class="bu">range</span>(<span class="dv">0</span> <span class="dv">1</span>) <span class="op">||</span>, <span class="op">///</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>legend(pos(<span class="dv">2</span>) ring(<span class="dv">0</span>) order(<span class="dv">1</span> <span class="st">"No Splenectomy"</span> <span class="dv">2</span> <span class="st">"Splenectomy"</span>) rows(<span class="dv">2</span>) size(large)) <span class="op">///</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="dv">0</span>(<span class="fl">0.1</span>)<span class="dv">1</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>ylabel(<span class="dv">0</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Qanadli Score"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>ytitle(<span class="st">"Relative Frequency"</span>, size(medlarge)) <span class="op">///</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>title(<span class="st">"Qanadli Score by Splenectomy Status"</span>, size(large)) <span class="op">///</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>xsize(<span class="dv">7</span>) <span class="op">///</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>ysize(<span class="dv">5</span>) <span class="op">///</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. //Association between splenectomy and quanadli score
+. twoway kdensity qanadli if splenectomy == 0, recast(area) fcolor(navy%05) lco
+&gt; lor(navy) lpattern(solid) lwidth(*2.5) bwidth(0.1) range(0 1) || ///
+&gt; kdensity qanadli if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cr
+&gt; anberry) lpattern(solid)  lwidth(*2.5) bwidth(0.1) range(0 1) ||, ///
+&gt; legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(
+&gt; large)) ///
+&gt; xlabel(0(0.1)1, labsize(large)) ///
+&gt; ylabel(0, labsize(large)) ///
+&gt; xtitle("Qanadli Score", size(medlarge)) ///
+&gt; ytitle("Relative Frequency", size(medlarge)) ///
+&gt; title("Qanadli Score by Splenectomy Status", size(large)) ///
+&gt; xsize(7) ///
+&gt; ysize(5) ///
+&gt; scheme(white_tableau)
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-13-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="duration-of-symptoms" class="level3">
+<h3 class="anchored" data-anchor-id="duration-of-symptoms">Duration of symptoms</h3>
+</section>
+<section id="presenceabsence-of-dvt" class="level3">
+<h3 class="anchored" data-anchor-id="presenceabsence-of-dvt">Presence/absence of DVT</h3>
+<div id="62e0d897" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>table1_mc, by(splenectomy) <span class="op">///</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">vars</span>( <span class="op">///</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>        symptoms_two_weeks <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>        dvt_workup <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>        dvt_found <span class="bu">bin</span> <span class="op">%</span><span class="fl">4.0</span><span class="er">f</span> \ <span class="op">///</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">///</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>        percent_n percsign(<span class="st">"%"</span>) iqrmiddle(<span class="st">","</span>) sdleft(<span class="st">" (±"</span>) sdright(<span class="st">")"</span>) missing onecol saving(<span class="st">"Results and Figures/$S_DATE/dvt presence by splenectomy.xlsx"</span>, replace)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. table1_mc, by(splenectomy) ///
+&gt;                 vars( ///
+&gt;                 symptoms_two_weeks bin %4.0f \ ///
+&gt;                 dvt_workup bin %4.0f \ ///
+&gt;                 dvt_found bin %4.0f \ ///
+&gt;                 ) ///
+&gt;                 percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(
+&gt; ")") missing onecol saving("Results and Figures/$S_DATE/dvt presence by splen
+&gt; ectomy.xlsx", replace)
+
+  +---------------------------------------------------------------+
+  | factor                                  N_0   N_1   m_0   m_1 |
+  |---------------------------------------------------------------|
+  | Symptoms present for 2 or more weeks?   100    40     0     0 |
+  |---------------------------------------------------------------|
+  | DVT workup performed?                   100    40     0     0 |
+  |---------------------------------------------------------------|
+  | DVT found                                68    23    32    17 |
+  +---------------------------------------------------------------+
+   N_ ... #records used below,   m_ ... #records not used
+ 
+  +----------------------------------------------------------------------------
+&gt; ----+
+  |                                         No Splenectomy   Splenectomy   p-va
+&gt; lue |
+  |----------------------------------------------------------------------------
+&gt; ----|
+  |                                         N=100            N=40              
+&gt;     |
+  |----------------------------------------------------------------------------
+&gt; ----|
+  | Symptoms present for 2 or more weeks?    8% (8)          20% (8)        0.0
+&gt; 44  |
+  |----------------------------------------------------------------------------
+&gt; ----|
+  | DVT workup performed?                   68% (68)         57% (23)       0.2
+&gt; 4   |
+  |----------------------------------------------------------------------------
+&gt; ----|
+  | DVT found                               71% (48)         35% (8)        0.0
+&gt; 02  |
+  +----------------------------------------------------------------------------
+&gt; ----+
+Data are presented as % (n).
+ 
+file Results and Figures/ 6 May 2025/dvt presence by splenectomy.xlsx saved
+
+. </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="main-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="main-analyses">Main Analyses</h2>
+<p>Here are the main associations between splenectomy status and Central vs Peripheral and Qanadli score.</p>
+<div id="e1b7aa25" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>cs peripheral splenectomy </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+                 |      Splenectomy       |
+                 |   Exposed   Unexposed  |      Total
+-----------------+------------------------+-----------
+           Cases |        21          37  |         58
+        Noncases |        19          63  |         82
+-----------------+------------------------+-----------
+           Total |        40         100  |        140
+                 |                        |
+            Risk |      .525         .37  |   .4142857
+                 |                        |
+                 |      Point estimate    |    [95% conf. interval]
+                 |------------------------+------------------------
+ Risk difference |             .155       |   -.0263933    .3363933 
+      Risk ratio |         1.418919       |    .9604441     2.09625 
+ Attr. frac. ex. |         .2952381       |    -.041185    .5229576 
+ Attr. frac. pop |         .1068966       |
+                 +-------------------------------------------------
+                               chi2(1) =     2.83  Pr&gt;chi2 = 0.0926</code></pre>
+</div>
+</div>
+<p>I used a Poisson regression because Qanadli score is actually a proportion (of occluded segments).</p>
+<p>Thus, the interpretation is: patients with splenectomy have 0.84x [0.42-1.68] of non-splenectomy</p>
+<div id="fde48f3c" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>poisson qanadli splenectomy age male_sex bmi_pe, irr</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>estimates store qanadli</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. poisson qanadli splenectomy age male_sex bmi_pe, irr
+note: noncount dependent variable encountered; if you are fitting an
+      exponential-mean model, consider using robust standard errors.
+
+Iteration 0:  Log likelihood = -63.672124  
+Iteration 1:  Log likelihood = -63.672123  
+
+Poisson regression                                      Number of obs =    120
+                                                        LR chi2(4)    =   0.54
+                                                        Prob &gt; chi2   = 0.9698
+Log likelihood = -63.672123                             Pseudo R2     = 0.0042
+
+------------------------------------------------------------------------------
+     qanadli |        IRR   Std. err.      z    P&gt;|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ splenectomy |   .7854346   .4211013    -0.45   0.652     .2746304    2.246319
+         age |   1.003166   .0122126     0.26   0.795     .9795135     1.02739
+    male_sex |   .9046508   .3273511    -0.28   0.782     .4451134    1.838617
+      bmi_pe |   1.005959   .0173025     0.35   0.730     .9726116    1.040449
+       _cons |   .1917937    .210698    -1.50   0.133     .0222707    1.651715
+------------------------------------------------------------------------------
+Note: _cons estimates baseline incidence rate.
+
+. estimates store qanadli
+
+. </code></pre>
+</div>
+</div>
+<div id="cba03691" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>coefplot qanadli, eform <span class="op">///</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>drop(_cons) <span class="op">///</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>xscale(log <span class="bu">range</span>(<span class="fl">0.25</span> <span class="dv">4</span>) extend) <span class="op">///</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>xline(<span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="fl">0.25</span> <span class="fl">0.5</span> <span class="dv">1</span> <span class="dv">2</span> <span class="dv">4</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>xscale(extend) <span class="op">///</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Multiplicative Change in Qanadli Score"</span> , size(large)) yscale(extend) <span class="op">///</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>ylabel(, labsize(large)) <span class="op">///</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>ciopts(recast(rcap) <span class="op">///</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>lwidth(thick)) <span class="op">///</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>mlabel(string(<span class="op">@</span>b,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" [ "</span> <span class="op">+</span> string(<span class="op">@</span>ll,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" - "</span> <span class="op">+</span> string(<span class="op">@</span>ul,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" ] "</span> <span class="op">+</span> cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.001</span>, <span class="st">"***"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.01</span>, <span class="st">"**"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.05</span>, <span class="st">"*"</span>, <span class="st">""</span>)))) <span class="op">///</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>mlabsize(medsmall) <span class="op">///</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>mlabposition(<span class="dv">12</span>) <span class="op">///</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>mlabgap(<span class="op">*</span><span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. coefplot qanadli, eform ///
+&gt; drop(_cons) ///
+&gt; xscale(log range(0.25 4) extend) ///
+&gt; xline(1) ///
+&gt; xlabel(0.25 0.5 1 2 4, labsize(large)) ///
+&gt; xscale(extend) ///
+&gt; xtitle("Multiplicative Change in Qanadli Score" , size(large)) yscale(extend)
+&gt;  ///
+&gt; ylabel(, labsize(large)) ///
+&gt; ciopts(recast(rcap) ///
+&gt; lwidth(thick)) ///
+&gt; mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,
+&gt; "%9.2f") + " ] " + cond(@pval&lt;.001, "***", cond(@pval&lt;.01, "**", cond(@pval&lt;.
+&gt; 05, "*", "")))) ///
+&gt; mlabsize(medsmall) ///
+&gt; mlabposition(12) ///
+&gt; mlabgap(*1) ///
+&gt; scheme(white_tableau) 
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-17-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>For the Peripheral vs Central classification, we can present this as an Odds Ratio or a Relative Risk - either way works</p>
+<p>those with splenectomy are 15.5% [-0.26 to -33.7%] more likely to have peripheral PE</p>
+<p>no longer significant, directionally similar.</p>
+<p>Same results, presented slightly differently below</p>
+<div id="ca14543e" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>logistic peripheral splenectomy age male_sex bmi_pe</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>estimates store peripheral</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. logistic peripheral splenectomy age male_sex bmi_pe
+
+Logistic regression                                     Number of obs =    120
+                                                        LR chi2(4)    =   7.76
+                                                        Prob &gt; chi2   = 0.1008
+Log likelihood = -77.623935                             Pseudo R2     = 0.0476
+
+------------------------------------------------------------------------------
+  peripheral | Odds ratio   Std. err.      z    P&gt;|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ splenectomy |   3.048503   1.614304     2.10   0.035     1.079795    8.606606
+         age |    1.00436   .0130801     0.33   0.738      .979048    1.030327
+    male_sex |   1.887784    .727224     1.65   0.099     .8872524     4.01659
+      bmi_pe |   .9870713   .0202846    -0.63   0.527     .9481043     1.02764
+       _cons |   .5041288   .5907398    -0.58   0.559     .0507108    5.011669
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. estimates store peripheral
+
+. </code></pre>
+</div>
+</div>
+<div id="790a90d6" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>coefplot peripheral, eform <span class="op">///</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>drop(_cons) <span class="op">///</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>xline(<span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="fl">0.25</span> <span class="fl">0.5</span> <span class="dv">1</span> <span class="dv">2</span> <span class="dv">4</span> <span class="dv">8</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>xscale(log <span class="bu">range</span>(<span class="fl">0.25</span> <span class="dv">4</span> <span class="dv">8</span>) extend) <span class="op">///</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Odds ratio of Peripheral PE"</span> , size(large)) yscale(extend) <span class="op">///</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>ylabel(, labsize(large)) <span class="op">///</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>ciopts(recast(rcap) <span class="op">///</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>lwidth(thick)) <span class="op">///</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>mlabel(string(<span class="op">@</span>b,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" [ "</span> <span class="op">+</span> string(<span class="op">@</span>ll,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" - "</span> <span class="op">+</span> string(<span class="op">@</span>ul,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" ] "</span> <span class="op">+</span> cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.001</span>, <span class="st">"***"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.01</span>, <span class="st">"**"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.05</span>, <span class="st">"*"</span>, <span class="st">""</span>)))) <span class="op">///</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>mlabsize(medsmall) <span class="op">///</span></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>mlabposition(<span class="dv">12</span>) <span class="op">///</span></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>mlabgap(<span class="op">*</span><span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. coefplot peripheral, eform ///
+&gt; drop(_cons) ///
+&gt; xline(1) ///
+&gt; xlabel(0.25 0.5 1 2 4 8, labsize(large)) ///
+&gt; xscale(log range(0.25 4 8) extend) ///
+&gt; xtitle("Odds ratio of Peripheral PE" , size(large)) yscale(extend) ///
+&gt; ylabel(, labsize(large)) ///
+&gt; ciopts(recast(rcap) ///
+&gt; lwidth(thick)) ///
+&gt; mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,
+&gt; "%9.2f") + " ] " + cond(@pval&lt;.001, "***", cond(@pval&lt;.01, "**", cond(@pval&lt;.
+&gt; 05, "*", "")))) ///
+&gt; mlabsize(medsmall) ///
+&gt; mlabposition(12) ///
+&gt; mlabgap(*1) ///
+&gt; scheme(white_tableau) 
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-19-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>more likely to be peripehral if splenectomy, after accounting for other factors.</p>
+<p>Lastly - the PA size metrics.</p>
+<p>They have relatively normal distributions - so just modeled with plain old linear regression</p>
+<div id="e60bdcd1" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>regress pa_d splenectomy age male_sex bmi_pe</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>estimates store regress_pa_d</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. regress pa_d splenectomy age male_sex bmi_pe
+
+      Source |       SS           df       MS      Number of obs   =       120
+-------------+----------------------------------   F(4, 115)       =      1.67
+       Model |  122.925516         4   30.731379   Prob &gt; F        =    0.1614
+    Residual |  2114.33315       115  18.3855057   R-squared       =    0.0549
+-------------+----------------------------------   Adj R-squared   =    0.0221
+       Total |  2237.25867       119   18.800493   Root MSE        =    4.2878
+
+------------------------------------------------------------------------------
+        pa_d | Coefficient  Std. err.      t    P&gt;|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ splenectomy |   1.099771    1.07482     1.02   0.308    -1.029239    3.228782
+         age |     .05685   .0263471     2.16   0.033     .0046614    .1090385
+    male_sex |   .6077549   .7863975     0.77   0.441    -.9499471    2.165457
+      bmi_pe |   .0638108   .0393857     1.62   0.108    -.0142047    .1418264
+       _cons |   24.08156   2.362229    10.19   0.000     19.40244    28.76068
+------------------------------------------------------------------------------
+
+. estimates store regress_pa_d
+
+. </code></pre>
+</div>
+</div>
+<div id="a84c3cca" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>coefplot regress_pa_d, <span class="op">///</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>drop(_cons) <span class="op">///</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>xline(<span class="dv">0</span>) <span class="op">///</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="op">-</span><span class="dv">2</span>(<span class="dv">1</span>)<span class="dv">2</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>xscale(<span class="bu">range</span>(<span class="op">-</span><span class="fl">2.5</span> <span class="fl">2.5</span>) extend) <span class="op">///</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Change in PA diameter (mm)"</span> , size(large)) yscale(extend) <span class="op">///</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>ylabel(, labsize(large)) <span class="op">///</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>ciopts(recast(rcap) <span class="op">///</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>lwidth(thick)) <span class="op">///</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>mlabel(string(<span class="op">@</span>b,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" [ "</span> <span class="op">+</span> string(<span class="op">@</span>ll,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" - "</span> <span class="op">+</span> string(<span class="op">@</span>ul,<span class="st">"</span><span class="sc">%9.2f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" ] "</span> <span class="op">+</span> cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.001</span>, <span class="st">"***"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.01</span>, <span class="st">"**"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.05</span>, <span class="st">"*"</span>, <span class="st">""</span>)))) <span class="op">///</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>mlabsize(medsmall) <span class="op">///</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>mlabposition(<span class="dv">12</span>) <span class="op">///</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>mlabgap(<span class="op">*</span><span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. coefplot regress_pa_d, ///
+&gt; drop(_cons) ///
+&gt; xline(0) ///
+&gt; xlabel(-2(1)2, labsize(large)) ///
+&gt; xscale(range(-2.5 2.5) extend) ///
+&gt; xtitle("Change in PA diameter (mm)" , size(large)) yscale(extend) ///
+&gt; ylabel(, labsize(large)) ///
+&gt; ciopts(recast(rcap) ///
+&gt; lwidth(thick)) ///
+&gt; mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,
+&gt; "%9.2f") + " ] " + cond(@pval&lt;.001, "***", cond(@pval&lt;.01, "**", cond(@pval&lt;.
+&gt; 05, "*", "")))) ///
+&gt; mlabsize(medsmall) ///
+&gt; mlabposition(12) ///
+&gt; mlabgap(*1) ///
+&gt; scheme(white_tableau) 
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-21-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cd3f3df3" class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>regress pa_aa splenectomy age male_sex bmi_pe</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>estimates store regress_pa_aa</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. regress pa_aa splenectomy age male_sex bmi_pe
+
+      Source |       SS           df       MS      Number of obs   =       120
+-------------+----------------------------------   F(4, 115)       =      6.65
+       Model |  .397474506         4  .099368626   Prob &gt; F        =    0.0001
+    Residual |  1.71761245       115   .01493576   R-squared       =    0.1879
+-------------+----------------------------------   Adj R-squared   =    0.1597
+       Total |  2.11508695       119   .01777384   Root MSE        =    .12221
+
+------------------------------------------------------------------------------
+       pa_aa | Coefficient  Std. err.      t    P&gt;|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ splenectomy |   .0004506   .0306345     0.01   0.988    -.0602305    .0611318
+         age |  -.0033906   .0007509    -4.52   0.000    -.0048781   -.0019031
+    male_sex |  -.0452838   .0224139    -2.02   0.046    -.0896814   -.0008861
+      bmi_pe |  -.0017419   .0011226    -1.55   0.123    -.0039655    .0004817
+       _cons |   1.243603   .0673283    18.47   0.000     1.110239    1.376967
+------------------------------------------------------------------------------
+
+. estimates store regress_pa_aa
+
+. </code></pre>
+</div>
+</div>
+<div id="8f516d63" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>coefplot regress_pa_aa, <span class="op">///</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>drop(_cons) <span class="op">///</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>xline(<span class="dv">0</span>) <span class="op">///</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>xlabel(<span class="op">-</span><span class="fl">.1</span>(<span class="fl">0.05</span>)<span class="fl">.1</span>, labsize(large)) <span class="op">///</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>xscale(<span class="bu">range</span>(<span class="op">-</span><span class="fl">.12</span> <span class="fl">.12</span>) extend) <span class="op">///</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>xtitle(<span class="st">"Change in PA:AA ratio (mm)"</span> , size(large)) yscale(extend) <span class="op">///</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>ylabel(, labsize(large)) <span class="op">///</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>ciopts(recast(rcap) <span class="op">///</span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>lwidth(thick)) <span class="op">///</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>mlabel(string(<span class="op">@</span>b,<span class="st">"</span><span class="sc">%9.3f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" [ "</span> <span class="op">+</span> string(<span class="op">@</span>ll,<span class="st">"</span><span class="sc">%9.3f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" - "</span> <span class="op">+</span> string(<span class="op">@</span>ul,<span class="st">"</span><span class="sc">%9.3f</span><span class="st">"</span>) <span class="op">+</span> <span class="st">" ] "</span> <span class="op">+</span> cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.001</span>, <span class="st">"***"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.01</span>, <span class="st">"**"</span>, cond(<span class="op">@</span>pval<span class="op">&lt;</span><span class="fl">.05</span>, <span class="st">"*"</span>, <span class="st">""</span>)))) <span class="op">///</span></span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>mlabsize(medsmall) <span class="op">///</span></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>mlabposition(<span class="dv">12</span>) <span class="op">///</span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>mlabgap(<span class="op">*</span><span class="dv">1</span>) <span class="op">///</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>scheme(white_tableau) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. coefplot regress_pa_aa, ///
+&gt; drop(_cons) ///
+&gt; xline(0) ///
+&gt; xlabel(-.1(0.05).1, labsize(large)) ///
+&gt; xscale(range(-.12 .12) extend) ///
+&gt; xtitle("Change in PA:AA ratio (mm)" , size(large)) yscale(extend) ///
+&gt; ylabel(, labsize(large)) ///
+&gt; ciopts(recast(rcap) ///
+&gt; lwidth(thick)) ///
+&gt; mlabel(string(@b,"%9.3f") + " [ " + string(@ll,"%9.3f") + " - " + string(@ul,
+&gt; "%9.3f") + " ] " + cond(@pval&lt;.001, "***", cond(@pval&lt;.01, "**", cond(@pval&lt;.
+&gt; 05, "*", "")))) ///
+&gt; mlabsize(medsmall) ///
+&gt; mlabposition(12) ///
+&gt; mlabgap(*1) ///
+&gt; scheme(white_tableau) 
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-23-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="appendix" class="level2">
+<h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
+<section id="this-is-code-to-assess-inter-rater-agreement" class="level3">
+<h3 class="anchored" data-anchor-id="this-is-code-to-assess-inter-rater-agreement">This is code to assess inter-rater agreement</h3>
+<p>(Can move this to the end; probably just summarize the agreement and then could include visualizations in supplement if anyone asks - they probably wont)</p>
+<p>First, inter-rater agreement of central-vs peripheral is assessed: I would report the Kappa for this. Then, for the Qanadli score - limits of agreement are rported: I would report the mean difference (95% UL and LL agreement)</p>
+<p>These are pretty good.</p>
+<div id="b0c81abd" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>kap central_darren central_mark</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>kappaetc central_darren central_mark, tab benchmark(d) showscale</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. kap central_darren central_mark
+
+             Expected
+Agreement   agreement     Kappa   Std. err.         Z      Prob&gt;Z
+-----------------------------------------------------------------
+  85.00%      49.96%     0.7002     0.0843       8.31      0.0000
+
+. kappaetc central_darren central_mark, tab benchmark(d) showscale
+
+Interrater agreement                             Number of subjects =     140
+                                                Ratings per subject =       2
+                                        Number of rating categories =       2
+------------------------------------------------------------------------------
+                     |                                       Deterministic
+                     |   Coef.  Std. Err.  P in.  P cum.  [Benchmark Interval]
+---------------------+--------------------------------------------------------
+   Percent Agreement |  0.8500    0.0303   0.95   0.949     0.8000     1.0000
+Brennan and Prediger |  0.7000    0.0606   0.90   0.949     0.6000     0.8000
+Cohen/Conger's Kappa |  0.7002    0.0604   0.90   0.950     0.6000     0.8000
+    Scott/Fleiss' Pi |  0.6999    0.0606   0.90   0.949     0.6000     0.8000
+           Gwet's AC |  0.7001    0.0606   0.90   0.950     0.6000     0.8000
+Krippendorff's Alpha |  0.7009    0.0606   0.90   0.951     0.6000     0.8000
+------------------------------------------------------------------------------
+
+     Benchmark scale
+
+           &lt;0.0000      Poor
+     0.0000-0.2000      Slight
+     0.2000-0.4000      Fair
+     0.4000-0.6000      Moderate
+     0.6000-0.8000      Substantial
+     0.8000-1.0000      Almost Perfect
+
+. </code></pre>
+</div>
+</div>
+<div id="68c4b69e" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>pvenn2 central_darren central_mark, plabel(<span class="st">"Central_DW"</span> <span class="st">"Central_MD"</span>) title(<span class="st">"Agreement in Central Determination"</span>)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>graph export <span class="st">"Results and Figures/$S_DATE/Overlap in Central Assessments.png"</span>, <span class="im">as</span>(png) name(<span class="st">"Graph"</span>) replace </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. pvenn2 central_darren central_mark, plabel("Central_DW" "Central_MD") title("
+&gt; Agreement in Central Determination")
+
+ Central PE |
+       [DW] |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         no |         71       50.71       50.71
+        yes |         69       49.29      100.00
+------------+-----------------------------------
+      Total |        140      100.00
+
+Central PE |    Central PE [MD]
+      [DW] |        no        yes |     Total
+-----------+----------------------+----------
+        no |        58         13 |        71 
+       yes |         8         61 |        69 
+-----------+----------------------+----------
+     Total |        66         74 |       140 
+
+Sizes of subsets:
+Set A: Central_DW as identified by the variable central_darren: 69
+Set B: Central_MD as identified by the variable central_mark: 74
+Set C: Population_C: 0
+AB Overlap: 61
+AC Overlap: 0
+BC Overlap: 0
+ABC Overlap: 0
+Total population: 140
+Draw total population rectangle (0,not; 1, yes): 1
+Rotation angle of circle B: 0
+Relative position of circle C (1,clockwise; -1,counterclockwise): 1
+
+. graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png"
+&gt; , as(png) name("Graph") replace 
+(file Results and Figures/ 6 May 2025/Overlap in Central Assessments.png not fo
+&gt; und)
+file Results and Figures/ 6 May 2025/Overlap in Central Assessments.png written
+&gt;  in PNG format
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-25-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="0af9a391" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>stata</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>kappaetc qanadli_mark qanadli_darren, loa returnonly</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> di <span class="st">"Number of subjects: "</span> r(N)</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>di <span class="st">"Mean difference of ratings: "</span> r(mean_diff)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="op">//</span> di <span class="st">"Standard deviation of mean difference: "</span> r(sd_diff)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>di <span class="st">"Lower limit of agreement: "</span> r(loa_ll)</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>di <span class="st">"Upper limit of agreement: "</span> r(loa_ul)</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>di <span class="st">"Level for limits of agreement: "</span> r(loa_level)</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>kappaetc qanadli_mark qanadli_darren, loa </span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>graph export <span class="st">"Results and Figures/$S_DATE/Bland Altman Qanadli.png"</span>, <span class="im">as</span>(png) name(<span class="st">"Graph"</span>) replace </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+. kappaetc qanadli_mark qanadli_darren, loa returnonly
+
+. // di "Number of subjects: " r(N)
+. di "Mean difference of ratings: " r(mean_diff)
+Mean difference of ratings: .01071429
+
+. // di "Standard deviation of mean difference: " r(sd_diff)
+. di "Lower limit of agreement: " r(loa_ll)
+Lower limit of agreement: -.12397543
+
+. di "Upper limit of agreement: " r(loa_ul)
+Upper limit of agreement: .145404
+
+. di "Level for limits of agreement: " r(loa_level)
+Level for limits of agreement: 95
+
+. kappaetc qanadli_mark qanadli_darren, loa 
+
+. graph export "Results and Figures/$S_DATE/Bland Altman Qanadli.png", as(png) 
+&gt; name("Graph") replace 
+(file Results and Figures/ 6 May 2025/Bland Altman Qanadli.png not found)
+file Results and Figures/ 6 May 2025/Bland Altman Qanadli.png written in PNG fo
+&gt; rmat
+
+. </code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="splenectomy_analysis_files/figure-html/cell-26-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

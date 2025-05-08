@@ -1,0 +1,366 @@
+---
+jupyter: python3
+---
+
+```{python}
+import stata_setup
+stata_setup.config(r"/Applications/Stata/", "be")
+```
+
+Pull in dataset and retain only cases that would have been eligible for the control group: admits captured in our system
+
+```{python}
+%%stata
+clear
+use "data/full_db"
+drop if admissionlocation == "Outpatient" 
+drop if admissionlocation == "OSH"
+capture mkdir "Results and Figures"
+capture mkdir "Results and Figures/$S_DATE/"
+```
+
+## Summary Tables
+
+stratified by splenectomy status 
+
+### Demographics (age, gender, BMI)
+
+```{python}
+%%stata
+
+table1_mc, by(splenectomy) ///
+		vars( ///
+		age conts %4.0f \ ///
+		male_sex bin %4.0f \ ///
+		is_white bin %4.0f \ ///
+		bmi_pe conts %4.1f \ ///
+		years_since_splenectomy conts %4.1f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/demographics by splenectomy.xlsx", replace)
+```
+
+### Admit characteristics (floor vs ICU, LOS)
+
+```{python}
+%%stata
+table1_mc, by(splenectomy) ///
+		vars( ///
+		pesi_pe conts %4.0f \ ///
+		admissionlocation cat %4.0f \ ///
+		hospitallosdays conts %4.0f \ ///
+		iculos conts %4.0f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/admit chars by splenectomy.xlsx", replace)	
+```
+
+```{python}
+%%stata
+// pesi_pe "PESI"
+twoway kdensity pesi_pe if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(10) range(0 240) || ///
+kdensity pesi_pe if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(10) range(0 240) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(40)240, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("PESI", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("PESI Score by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+```
+
+```{python}
+%%stata
+// variable hospitallosdays	"Hospital LOS"
+twoway kdensity hospitallosdays if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(5) range(0 60) || ///
+kdensity hospitallosdays if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(5) range(0 60) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(10)60, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("Hospital LOS", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("Hospital LOS by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+```
+
+### Evidence of RV strain (trop, BNP, RV/LV ratio) or PH (PA diameter)
+
+```{python}
+%%stata
+table1_mc, by(splenectomy) ///
+		vars( ///
+		pa_d conts %4.2f \ ///
+		pa_aa conts %4.2f \ ///
+		pa_enlarged bin %4.0f \ ///
+		high_pa_aa bin %4.0f \ ///
+		rvlvratio conts %4.2f \ ///
+		rvlvratio_initial1abnormal bin %4.0f \ ///
+		rightheartstrain bin %4.0f \ ///
+		rvsp conts %4.2f \ ///
+		septal_flattening bin %4.0f \ ///
+		troponin_max conts %4.2f \ ///
+		bnp_max conts %4.0f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/rv strain by splenectomy.xlsx", replace)
+```
+
+```{python}
+%%stata
+// PA diameter
+twoway kdensity pa_d if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(2.5) range(10 45) || ///
+kdensity pa_d if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(2.5) range(10 45) ||, ///
+legend(pos(10) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(medlarge)) ///
+xlabel(10(5)45, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("PA Diameter (mm)", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("PA Diameter by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/PA Diameter by Splenectomy Status.png", as(png) name("Graph") replace
+```
+
+```{python}
+%%stata
+//PA:AA
+twoway kdensity pa_aa if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(.05) range(0.5 1.5) || ///
+kdensity pa_aa if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(.05) range(0.5 1.5) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0.5(.1)1.5, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("PA:AA Ratio", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("Pulm Artery to Ascending Aorta ratio, by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+graph export "Results and Figures/$S_DATE/PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
+```
+
+Note, really high rate of enlarged PA
+
+RV:LV
+
+```{python}
+%%stata
+// RV LV ratio (new)
+twoway kdensity rvlvratio if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(0.25) range(0.45 2.55) || ///
+kdensity rvlvratio if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(0.25) range(0.45 2.55) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(medlarge)) ///
+xlabel(0.45(.2)2.55, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("RV to LV ratio", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("RV:LV Ratio by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+```
+
+
+### Clot characteristics (central vs. peripheral, Qanadli score)
+
+```{python}
+%%stata
+table1_mc, by(splenectomy) ///
+		vars( ///
+		peripheral bin %4.0f \ ///
+		qanadli conts %4.2f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/clot chars by splenectomy.xlsx", replace)	
+```
+
+```{python}
+%%stata
+//Association between splenectomy and quanadli score
+twoway kdensity qanadli if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(0.1) range(0 1) || ///
+kdensity qanadli if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(0.1) range(0 1) ||, ///
+legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
+xlabel(0(0.1)1, labsize(large)) ///
+ylabel(0, labsize(large)) ///
+xtitle("Qanadli Score", size(medlarge)) ///
+ytitle("Relative Frequency", size(medlarge)) ///
+title("Qanadli Score by Splenectomy Status", size(large)) ///
+xsize(7) ///
+ysize(5) ///
+scheme(white_tableau)
+```
+
+### Duration of symptoms
+### Presence/absence of DVT
+
+```{python}
+%%stata
+table1_mc, by(splenectomy) ///
+		vars( ///
+		symptoms_two_weeks bin %4.0f \ ///
+		dvt_workup bin %4.0f \ ///
+		dvt_found bin %4.0f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/dvt presence by splenectomy.xlsx", replace)
+```
+
+## Main Analyses
+
+Here are the main associations between splenectomy status and Central vs Peripheral and Qanadli score. 
+
+```{python}
+%%stata
+cs peripheral splenectomy 
+```
+
+I used a Poisson regression because Qanadli score is actually a proportion (of occluded segments). 
+
+Thus, the interpretation is: patients with splenectomy have 0.84x [0.42-1.68] of non-splenectomy
+
+```{python}
+%%stata
+poisson qanadli splenectomy age male_sex bmi_pe, irr
+estimates store qanadli
+```
+
+```{python}
+%%stata
+coefplot qanadli, eform ///
+drop(_cons) ///
+xscale(log range(0.25 4) extend) ///
+xline(1) ///
+xlabel(0.25 0.5 1 2 4, labsize(large)) ///
+xscale(extend) ///
+xtitle("Multiplicative Change in Qanadli Score" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+```
+
+For the Peripheral vs Central classification, we can present this as an Odds Ratio or a Relative Risk - either way works
+
+those with splenectomy are 15.5% [-0.26 to -33.7%] more likely to have peripheral PE
+
+no longer significant, directionally similar.
+
+Same results, presented slightly differently below
+
+```{python}
+%%stata
+logistic peripheral splenectomy age male_sex bmi_pe
+estimates store peripheral
+```
+
+```{python}
+%%stata
+coefplot peripheral, eform ///
+drop(_cons) ///
+xline(1) ///
+xlabel(0.25 0.5 1 2 4 8, labsize(large)) ///
+xscale(log range(0.25 4 8) extend) ///
+xtitle("Odds ratio of Peripheral PE" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+```
+
+more likely to be peripehral if splenectomy, after accounting for other factors.
+
+Lastly - the PA size metrics. 
+
+They have relatively normal distributions - so just modeled with plain old linear regression
+
+```{python}
+%%stata
+regress pa_d splenectomy age male_sex bmi_pe
+estimates store regress_pa_d
+```
+
+```{python}
+%%stata
+coefplot regress_pa_d, ///
+drop(_cons) ///
+xline(0) ///
+xlabel(-2(1)2, labsize(large)) ///
+xscale(range(-2.5 2.5) extend) ///
+xtitle("Change in PA diameter (mm)" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9.2f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+```
+
+```{python}
+%%stata
+regress pa_aa splenectomy age male_sex bmi_pe
+estimates store regress_pa_aa
+```
+
+```{python}
+%%stata
+coefplot regress_pa_aa, ///
+drop(_cons) ///
+xline(0) ///
+xlabel(-.1(0.05).1, labsize(large)) ///
+xscale(range(-.12 .12) extend) ///
+xtitle("Change in PA:AA ratio (mm)" , size(large)) yscale(extend) ///
+ylabel(, labsize(large)) ///
+ciopts(recast(rcap) ///
+lwidth(thick)) ///
+mlabel(string(@b,"%9.3f") + " [ " + string(@ll,"%9.3f") + " - " + string(@ul,"%9.3f") + " ] " + cond(@pval<.001, "***", cond(@pval<.01, "**", cond(@pval<.05, "*", "")))) ///
+mlabsize(medsmall) ///
+mlabposition(12) ///
+mlabgap(*1) ///
+scheme(white_tableau) 
+```
+
+## Appendix
+
+### This is code to assess inter-rater agreement
+
+(Can move this to the end; probably just summarize the agreement and then could include visualizations in supplement if anyone asks - they probably wont)
+
+First, inter-rater agreement of central-vs peripheral is assessed: I would report the Kappa for this. 
+Then, for the Qanadli score - limits of agreement are rported: I would report the mean difference (95% UL and LL agreement)
+
+These are pretty good. 
+
+```{python}
+%%stata
+kap central_darren central_mark
+kappaetc central_darren central_mark, tab benchmark(d) showscale
+```
+
+```{python}
+%%stata
+pvenn2 central_darren central_mark, plabel("Central_DW" "Central_MD") title("Agreement in Central Determination")
+graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", as(png) name("Graph") replace 
+```
+
+```{python}
+%%stata
+kappaetc qanadli_mark qanadli_darren, loa returnonly
+// di "Number of subjects: " r(N)
+di "Mean difference of ratings: " r(mean_diff)
+// di "Standard deviation of mean difference: " r(sd_diff)
+di "Lower limit of agreement: " r(loa_ll)
+di "Upper limit of agreement: " r(loa_ul)
+di "Level for limits of agreement: " r(loa_level)
+kappaetc qanadli_mark qanadli_darren, loa 
+graph export "Results and Figures/$S_DATE/Bland Altman Qanadli.png", as(png) name("Graph") replace 
+```
+

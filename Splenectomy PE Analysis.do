@@ -478,7 +478,6 @@ logistic peripheral splenectomy age male_sex bmi_pe if ed_encounter
 // troponin_max "Troponin (max)"
 //log transform
 
-
 coefplot qanadli, eform ///
 drop(_cons) ///
 xscale(log range(0.25 4) extend) ///
