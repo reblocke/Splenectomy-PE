@@ -12,6 +12,8 @@ data/full_db has been generated
 export excel using "cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
 cd ..
 
+Note: the PYTHON JUPYTER notebook is more recent. 
+
 */ 
 
 capture log close
@@ -139,7 +141,25 @@ table1_mc if ed_encounter, by(splenectomy) ///
 		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ED only -baseline chars by splenectomy.xlsx", replace)
 	
 bysort obesity_dx: summ bmi_pe, detail //decent overlap
-		
+	
+	
+table1_mc, by(splenectomy) ///
+		vars( ///
+		symptoms_two_weeks bin %4.0f \ ///
+		dvt_workup bin %4.0f \ ///
+		dvt_found bin %4.0f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/dvt presence by splenectomy.xlsx", replace)
+	
+table1_mc if ed_encounter, by(splenectomy) ///
+		vars( ///
+		symptoms_two_weeks bin %4.0f \ ///
+		dvt_workup bin %4.0f \ ///
+		dvt_found bin %4.0f \ ///
+		) ///
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/ED only - dvt presence by splenectomy.xlsx", replace)
+	
+	
 /* 
 CT and TTE Characteristics: 
 */
