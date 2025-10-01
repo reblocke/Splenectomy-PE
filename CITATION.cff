@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: >-
+  If you use this repository, please cite this software and, once available,
+  the associated preprint/journal article.
+type: software
+title: "Splenectomy–PE: analysis code for studies of splenectomy, PE, and CTEPH"
+version: 0.1.0
+date-released: 2025-09-30
+repository-code: "https://github.com/reblocke/Splenectomy-PE"
+license: MIT
+authors:
+  - family-names: Locke
+    given-names: Brian
+    orcid: "https://orcid.org/0000-0002-3588-5238"
+    affiliation: "Intermountain Medical Center; Intermountain Health"
+keywords:
+  - CTEPH
+  - pulmonary embolism
+  - splenectomy
+  - Stata
+  - Quarto
+preferred-citation:
+  type: misc
+  title: "Splenectomy–PE (analysis code)"
+  authors:
+    - family-names: Locke
+      given-names: Brian
+      orcid: "https://orcid.org/0000-0002-3588-5238"
+  year: 2025
+  notes: "Software supporting a manuscript in preparation; conference abstract presented at ATS 2025 (A6391)."
