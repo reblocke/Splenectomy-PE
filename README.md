@@ -144,3 +144,51 @@ We welcome issues and pull requests that improve documentation, transparency, or
 
 - Maintainer: Brian Locke, MD MSc (GitHub: @reblocke)  
 - Questions? Please open an issue in the repository.
+
+## LLM and Repository Readiness Notes
+
+### Description
+Splenectomy Increases CTEPH Risk and Modifies Clinical Features of Acute Pulmonary Embolism
+
+### Instructions
+Start with this README, then inspect the files listed under Repository Layout. For computational workflows, run commands from the repository root and avoid committing generated outputs unless a release explicitly calls for them.
+
+### Authors, Funding, and Acknowledgments
+Maintainer: Brian W. Locke (`@reblocke`, ORCID 0000-0002-3588-5238). Preserve any project-specific author, funding, and acknowledgment details already listed elsewhere in the repository or accompanying publication.
+
+### Repository Layout
+- `CITATION.cff`
+- `CODE_OF_CONDUCT.md`
+- `CONTRIBUTING.md`
+- `LICENSE`
+- `Paper/BL Edits - Enrollment Cohorts.docx`
+- `Paper/BL Edits - Splenectomy in CTEPH and PE 06112025_White.docx`
+- `Paper/BL Edits - Splenectomy in CTEPH and PE 06182025_DW[79].docx`
+- `Paper/BL Edits - Splenectomy in CTEPH and PE.docx`
+- `Paper/Enrollment Cohorts - BWL edits.docx`
+- `Paper/Enrollment Cohorts.docx`
+- `Paper/Figure 2 - Adj Odds Distal PE.svg`
+- `Paper/Splenectomy in CTEPH and PE 06112025_White.docx`
+- `Paper/Splenectomy in CTEPH and PE 06182025_DW[79].docx`
+- `README.md`
+
+### Data and Codebook
+Clinical dataset likely restricted; verify no PHI
+
+### Workflow / Script Order
+Review README-defined workflow
+
+### Dependencies / Environment
+Repo README and scripts
+
+### Citation
+Preferred scholarly citation: https://doi.org/10.1002/pul2.70231. Cite this repository with the GitHub URL and the commit or release used.
+
+### License
+Repository license status: MIT. See the root license file when present. Third-party and publisher materials remain under their original terms.
+
+### Manuscript Status
+No public manuscript Markdown audited yet; use DOI pending accepted-version check Publisher text not copied; code license present
+
+### Contact
+Maintainer: Brian W. Locke (`@reblocke`). Use GitHub issues or pull requests for repository-specific questions when the repository is public.
