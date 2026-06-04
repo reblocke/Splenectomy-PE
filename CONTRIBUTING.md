@@ -18,7 +18,7 @@ Thanks for your interest in improving the transparency and reproducibility of th
 2. If changing results or scripts, update the **Results mapping** table in `README.md`.
 3. If adding new analysis steps, prefer scripted pipelines (Stata do-files, Quarto, or Make) and include exact commands to run.
 4. If adding dependencies, document them and pin versions where feasible.
-5. Run the relevant scripts locally to ensure they execute without errors (with your institutionally approved data, or in dry-run mode).
+5. Run the relevant scripts locally to ensure they execute without errors with your institutionally approved data, or confirm that they fail only with the documented missing-data message.
 
 ## Commit style
 - Write clear, descriptive commit messages (imperative mood): `Add smoke test for logistic regression figure`.
@@ -32,7 +32,7 @@ Thanks for your interest in improving the transparency and reproducibility of th
 - [ ] CI (if present) passes.
 
 ## Releasing (for maintainers)
-- Create a tagged GitHub release that corresponds to the manuscript version (e.g., `v0.1.0`).
+- Create a tagged GitHub release that corresponds to a repository/article-support version (e.g., `v0.2.0`).
 - Archive the release with Zenodo to mint a DOI and add it to `README.md` and `CITATION.cff`.
 - If figures/tables changed, confirm the mapping table is accurate and that outputs render.
 

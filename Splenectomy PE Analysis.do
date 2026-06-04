@@ -1,60 +1,82 @@
-/* 
-Splenectomy PE 
+/*
+Splenectomy PE
 
 Analytic Code
 
 Brian W Locke MD MSCI
 
-Assumes that data cleaning has already been run and 
+	Assumes that data cleaning has already been run and
 
-data/full_db has been generated 
+	outputs/stata/derived/full_db.dta has been generated
 
 export excel using "cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
 cd ..
 
-Note: the PYTHON JUPYTER notebook is more recent. 
+Note: the PYTHON JUPYTER notebook is more recent.
 
-*/ 
+*/
 
+version 17.0
 capture log close
-cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
-//cd "/Users/reblocke/Research/Splenectomy-PE"
 
-capture mkdir "Results and Figures"
-capture mkdir "Results and Figures/$S_DATE/" //make new folder for figure output if needed
-capture mkdir "Results and Figures/$S_DATE/Logs/" //new folder for stata logs
+* Arguments:
+*   1. derived input root containing full_db.dta, default outputs/stata/derived
+*   2. output root for generated tables, figures, and logs, default outputs/stata
+local derived_root "outputs/stata/derived"
+local output_root "outputs/stata"
+if "`1'" != "" local derived_root "`1'"
+if "`2'" != "" local output_root "`2'"
 
-/* Set up Do File Back-up*/ 
+local run_date = subinstr("`c(current_date)'", " ", "-", .)
+local run_dir "`output_root'/`run_date'"
+local log_dir "`run_dir'/Logs"
+local full_db "`derived_root'/full_db.dta"
+
+capture mkdir "outputs"
+capture mkdir "`output_root'"
+capture mkdir "`run_dir'"
+capture mkdir "`log_dir'"
+
+/* Set up Do File Back-up*/
 local a1=substr(c(current_time),1,2)
 local a2=substr(c(current_time),4,2)
 local a3=substr(c(current_time),7,2)
 local b = "Splenectomy PE Analysis.do" // do file name
-copy "`b'" "Results and Figures/$S_DATE/Logs/(`a1'_`a2'_`a3')`b'"
+copy "`b'" "`log_dir'/(`a1'_`a2'_`a3')`b'", replace
 
-set scheme cleanplots
+capture set scheme cleanplots
+if _rc {
+	di as text "Optional cleanplots scheme not installed; using current Stata scheme."
+}
 graph set window fontface "Helvetica"
-log using temp.log, replace
+log using "`log_dir'/analysis.log", replace text
 
 * Load data
 clear
-use "data/full_db"
+capture confirm file "`full_db'"
+if _rc {
+	di as error "Required derived dataset not found: `full_db'"
+	di as error "Run: stata-mp -b do \"Splenectomy PE data cleaning.do\" \"data/private\" \"outputs/stata\""
+	exit 601
+}
+use "`full_db'"
 
 
 
 
-/* 
-Assess Agreement Between Raters 
-*/ 
-	
+/*
+Assess Agreement Between Raters
+*/
+
 kap central_darren central_mark, tab
 //kappaetc central_darren central_mark, tab benchmark(d)  showscale
 
 pvenn2 central_darren central_mark, plabel("Central_DW" "Central_MD") title("Agreement in Central Determination")
-graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", as(png) name("Graph") replace 
+graph export "`run_dir'/Overlap in Central Assessments.png", as(png) name("Graph") replace
 
 //Limits of agreement for Qanadli
-kappaetc qanadli_mark qanadli_darren, loa 
-graph export "Results and Figures/$S_DATE/Bland Altman Qanadli.png", as(png) name("Graph") replace 
+kappaetc qanadli_mark qanadli_darren, loa
+graph export "`run_dir'/Bland Altman Qanadli.png", as(png) name("Graph") replace
 kappaetc qanadli_mark qanadli_darren, loa returnonly
 di "Number of subjects: " r(N)
 di "Mean difference of ratings: " r(mean_diff)
@@ -70,7 +92,7 @@ table1_mc, by(splenectomy) ///
 		qanadli_darren conts %4.2f \ ///
 		qanadli_mark conts %4.2f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ratings mark darren by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ratings mark darren by splenectomy.xlsx", replace)
 
 regress qanadli_mark qanadli_darren
 local rsquared = round(e(r2), 0.01)
@@ -82,13 +104,13 @@ twoway (scatter qanadli_mark qanadli_darren) ///
        legend(off) ///
        text(0.9 0.1 "R-squared = `rsquared'", place(e)) ///
 	   title("Agreement in Qanadli Score Assessments")
-graph export "Results and Figures/$S_DATE/Overlap in Qanadli Assessments.png", as(png) name("Graph") replace 
-	  
-	 
+graph export "`run_dir'/Overlap in Qanadli Assessments.png", as(png) name("Graph") replace
 
-/* 
+
+
+/*
 Data description and crosstabulations with splenectomy statu
-*/ 
+*/
 
 /*
 Baseline Characteristics, by spelenectomy status
@@ -114,7 +136,7 @@ table1_mc, by(splenectomy) ///
 		thyroid_dz bin %4.0f \ ///
 		ibd bin %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/baseline chars by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/baseline chars by splenectomy.xlsx", replace)
 
 		//ed_encounter only
 table1_mc if ed_encounter, by(splenectomy) ///
@@ -138,30 +160,30 @@ table1_mc if ed_encounter, by(splenectomy) ///
 		thyroid_dz bin %4.0f \ ///
 		ibd bin %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ED only -baseline chars by splenectomy.xlsx", replace)
-	
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ED only -baseline chars by splenectomy.xlsx", replace)
+
 bysort obesity_dx: summ bmi_pe, detail //decent overlap
-	
-	
+
+
 table1_mc, by(splenectomy) ///
 		vars( ///
 		symptoms_two_weeks bin %4.0f \ ///
 		dvt_workup bin %4.0f \ ///
 		dvt_found bin %4.0f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/dvt presence by splenectomy.xlsx", replace)
-	
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("`run_dir'/dvt presence by splenectomy.xlsx", replace)
+
 table1_mc if ed_encounter, by(splenectomy) ///
 		vars( ///
 		symptoms_two_weeks bin %4.0f \ ///
 		dvt_workup bin %4.0f \ ///
 		dvt_found bin %4.0f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/ED only - dvt presence by splenectomy.xlsx", replace)
-	
-	
-/* 
-CT and TTE Characteristics: 
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("`run_dir'/ED only - dvt presence by splenectomy.xlsx", replace)
+
+
+/*
+CT and TTE Characteristics:
 */
 
 table1_mc, by(splenectomy) ///
@@ -191,8 +213,8 @@ table1_mc, by(splenectomy) ///
 		unquantified_ra_area bin %4.0f \ ///
 		pericardial_eff cat %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ct and tte chars by splenectomy.xlsx", replace)	
-		
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ct and tte chars by splenectomy.xlsx", replace)
+
 table1_mc if ed_encounter, by(splenectomy) ///
 		vars( ///
 		central bin %4.0f \ ///
@@ -220,19 +242,19 @@ table1_mc if ed_encounter, by(splenectomy) ///
 		unquantified_ra_area bin %4.0f \ ///
 		pericardial_eff cat %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ED only - ct and tte chars by splenectomy.xlsx", replace)	
-		
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ED only - ct and tte chars by splenectomy.xlsx", replace)
+
 // dilatedpulmartery bin %4.0f \ /// - not sure what this one is about. Comment in report?
 
-//Very high rates of enlargment. 				
-logistic high_pa_aa male age splenectomy, or //controlling for age, sex actually makes more dramatic.
+//Very high rates of enlargment.
+logistic high_pa_aa male_sex age splenectomy, or //controlling for age, sex actually makes more dramatic.
 
 // Penalized regression - may be more valid to use w small samples.
-firthlogit high_pa_aa male age splenectomy, or 
-					
-/* 	
+firthlogit high_pa_aa male_sex age splenectomy, or
+
+/*
 Acute Illness characteristics:
-*/ 
+*/
 
 table1_mc, by(splenectomy) ///
 		vars( ///
@@ -252,7 +274,7 @@ table1_mc, by(splenectomy) ///
 		troponin_max conts %4.2f \ ///
 		bnp_max conts %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/phys by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/phys by splenectomy.xlsx", replace)
 
 table1_mc if ed_encounter, by(splenectomy) ///
 		vars( ///
@@ -272,13 +294,13 @@ table1_mc if ed_encounter, by(splenectomy) ///
 		troponin_max conts %4.2f \ ///
 		bnp_max conts %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ED only - phys by splenectomy.xlsx", replace)
-		
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ED only - phys by splenectomy.xlsx", replace)
 
-/* 
-Outcomes: 
-*/ 
-		
+
+/*
+Outcomes:
+*/
+
 table1_mc, by(splenectomy) ///
 		vars( ///
 		apl_ab bin %4.0f \ ///
@@ -294,7 +316,7 @@ table1_mc, by(splenectomy) ///
 		hospitallosdays conts %4.0f \ ///
 		iculos conts %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/outcomes by splenectomy.xlsx", replace)
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/outcomes by splenectomy.xlsx", replace)
 
 table1_mc if ed_encounter, by(splenectomy) ///
 		vars( ///
@@ -311,21 +333,21 @@ table1_mc if ed_encounter, by(splenectomy) ///
 		hospitallosdays conts %4.0f \ ///
 		iculos conts %4.0f \ ///
 		) ///
-		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("Results and Figures/$S_DATE/ED Only - outcomes by splenectomy.xlsx", replace)		
-		
-		
-		
-		
-/* Analyses: 
+		total(before) percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol test saving("`run_dir'/ED Only - outcomes by splenectomy.xlsx", replace)
+
+
+
+
+/* Analyses:
 
 "We have now gotten through the secondary data and added things as you requested for each group (Age, sex, BMI should be there for all pts and made the chronic changes into a 1 or 0 variable).   Also moved the excluded splenectomy patients to a different tab.  "
 
-- Age, gender, BMI first ; subsequent analysis may include  - 
+- Age, gender, BMI first ; subsequent analysis may include  -
 
 - Race/ethnicity
 - Presence/absence of provoking factors for PE or CTEPH
 - Cancer, immobility/injury within 30d, surgery within 30d, clotting d/o, chf, chronic lung dz, afib, pregnancy, estrogen use, obesity, CVC (central or picc line) presence within 30d), thyroid disease, prior VTE of any kind, antiphospholipid ab, lupus anticoagulant, factor VIII level if present, non-O blood group,  inflammatory bowel disease)
-- DVT present, absent, or unknown based on chart records within 1 week of incident event.  
+- DVT present, absent, or unknown based on chart records within 1 week of incident event.
 - VS related to PE hospitalization, PESI score at dx
 - Hospital admission location, LOS in ICU and hospital
 - PE therapy received
@@ -336,14 +358,14 @@ table1_mc if ed_encounter, by(splenectomy) ///
 - History of splenectomy (as well as age at splenectomy and indication for it if present)
 - Estrogen use
 
-*/ 
-		
+*/
 
-	  
-	  /* 
-	  Visualize Distributions of Continuous Variables by Splenectomy Status 
-	  */ 
-	  
+
+
+	  /*
+	  Visualize Distributions of Continuous Variables by Splenectomy Status
+	  */
+
 //Association between splenectomy and quanadli average
 twoway kdensity qanadli if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(0.1) range(0 1) || ///
 kdensity qanadli if splenectomy == 1, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(0.1) range(0 1) ||, ///
@@ -356,7 +378,7 @@ title("Qanadli Score by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/Qanadli by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/Qanadli by Splenectomy Status.png", as(png) name("Graph") replace
 
 
 // pesi_pe "PESI"
@@ -371,9 +393,9 @@ title("PESI Score by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/PESI by Splenectomy Status.png", as(png) name("Graph") replace
 
-//and only ED 
+//and only ED
 twoway kdensity pesi_pe if splenectomy == 0 & ed_encounter, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(10) range(0 240) || ///
 kdensity pesi_pe if splenectomy == 1 & ed_encounter, recast(area) fcolor(erose%05) lcolor(cranberry) lpattern(solid)  lwidth(*2.5) bwidth(10) range(0 240) ||, ///
 legend(pos(2) ring(0) order(1 "No Splenectomy" 2 "Splenectomy") rows(2) size(large)) ///
@@ -385,7 +407,7 @@ title("PESI Score by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/ED only - PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/ED only - PESI by Splenectomy Status.png", as(png) name("Graph") replace
 
 // PA diameter
 twoway kdensity pa_d if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(2.5) range(10 45) || ///
@@ -399,7 +421,7 @@ title("PA Diameter by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PA Diameter by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/PA Diameter by Splenectomy Status.png", as(png) name("Graph") replace
 
 //PA:AA
 twoway kdensity pa_aa if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(.05) range(0.5 1.5) || ///
@@ -413,7 +435,7 @@ title("Pulm Artery to Ascending Aorta ratio, by Splenectomy Status", size(large)
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
+graph export "`run_dir'/PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
 
 //only ed
 twoway kdensity pa_aa if splenectomy == 0 & ed_encounter, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(.05) range(0.5 1.5) || ///
@@ -427,7 +449,7 @@ title("Pulm Artery to Ascending Aorta ratio, by Splenectomy Status", size(large)
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/ED-only PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
+graph export "`run_dir'/ED-only PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
 
 
 // variable hospitallosdays	"Hospital LOS"
@@ -442,7 +464,7 @@ title("Hospital LOS by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/Hospital LOS by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/Hospital LOS by Splenectomy Status.png", as(png) name("Graph") replace
 
 // iculos "ICU LOS"
 twoway kdensity iculos if splenectomy == 0, recast(area) fcolor(navy%05) lcolor(navy) lpattern(solid) lwidth(*2.5) bwidth(2.5) range(0 30) || ///
@@ -456,14 +478,14 @@ title("ICU LOS by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/ICU LOS by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "`run_dir'/ICU LOS by Splenectomy Status.png", as(png) name("Graph") replace
 
 
 
 
-/* 
-Main Analyses 
-*/ 
+/*
+Main Analyses
+*/
 
 
 //Using poisson - because Qanadli score is actually a proportion (of possible occluded segments)
@@ -512,8 +534,8 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
-graph export "Results and Figures/$S_DATE/Qanadli Poisson Regression.png", as(png) name("Graph") replace 
+scheme(white_tableau)
+graph export "`run_dir'/Qanadli Poisson Regression.png", as(png) name("Graph") replace
 
 coefplot peripheral, eform ///
 drop(_cons) ///
@@ -528,13 +550,13 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
-graph export "Results and Figures/$S_DATE/Peripheral Logistic Regression.png", as(png) name("Graph") replace
+scheme(white_tableau)
+graph export "`run_dir'/Peripheral Logistic Regression.png", as(png) name("Graph") replace
 
 
 
 
-/* PA Size Indices */ 
+/* PA Size Indices */
 regress pa_d splenectomy age male_sex bmi_pe
 estimates store regress_pa_d
 regress pa_d splenectomy age male_sex bmi_pe if ed_encounter
@@ -552,8 +574,8 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
-graph export "Results and Figures/$S_DATE/PA_d linear Regression.png", as(png) name("Graph") replace
+scheme(white_tableau)
+graph export "`run_dir'/PA_d linear Regression.png", as(png) name("Graph") replace
 
 regress pa_aa splenectomy age male_sex bmi_pe
 estimates store regress_pa_aa
@@ -572,13 +594,13 @@ mlabel(string(@b,"%9.3f") + " [ " + string(@ll,"%9.3f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
-graph export "Results and Figures/$S_DATE/PA_AA linear Regression.png", as(png) name("Graph") replace
+scheme(white_tableau)
+graph export "`run_dir'/PA_AA linear Regression.png", as(png) name("Graph") replace
 
 
 
 
-/* Not utilized as not confident enough in the ratings, particularly subjective */ 
+/* Not utilized as not confident enough in the ratings, particularly subjective */
 
 //chronic changes
 
@@ -601,6 +623,7 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
-graph export "Results and Figures/$S_DATE/Chronic Changes Logistic Regression.png", as(png) name("Graph") replace
+scheme(white_tableau)
+graph export "`run_dir'/Chronic Changes Logistic Regression.png", as(png) name("Graph") replace
 
+log close
