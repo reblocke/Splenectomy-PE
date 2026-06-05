@@ -3,8 +3,12 @@ jupyter: python3
 ---
 
 ```{python}
+import os
 import stata_setup
-stata_setup.config(r"/Applications/Stata/", "be")
+stata_setup.config(
+    os.environ.get("STATA_HOME", "/Applications/Stata"),
+    os.environ.get("STATA_EDITION", "be"),
+)
 ```
 
 Pull in dataset and retain only cases that would have been eligible for the control group: admits captured in our system
@@ -12,16 +16,28 @@ Pull in dataset and retain only cases that would have been eligible for the cont
 ```{python}
 %%stata
 clear
-use "data/full_db"
-drop if admissionlocation == "Outpatient" 
+local derived_file : environment SPLENECTOMY_PE_DERIVED
+if "`derived_file'" == "" local derived_file "outputs/stata/derived/full_db.dta"
+local output_root : environment SPLENECTOMY_PE_OUTPUT
+if "`output_root'" == "" local output_root "outputs/stata/quarto"
+global SPLENECTOMY_PE_OUTPUT "`output_root'"
+capture mkdir "outputs"
+capture mkdir "outputs/stata"
+capture mkdir "$SPLENECTOMY_PE_OUTPUT"
+capture confirm file "`derived_file'"
+if _rc {
+    di as error "Required derived dataset not found: `derived_file'"
+    di as error "Run Splenectomy PE data cleaning.do before rendering this Quarto document."
+    exit 601
+}
+use "`derived_file'"
+drop if admissionlocation == "Outpatient"
 drop if admissionlocation == "OSH"
-capture mkdir "Results and Figures"
-capture mkdir "Results and Figures/$S_DATE/"
 ```
 
 ## Summary Tables
 
-stratified by splenectomy status 
+stratified by splenectomy status
 
 ### Demographics (age, gender, BMI)
 
@@ -36,7 +52,7 @@ table1_mc, by(splenectomy) ///
 		bmi_pe conts %4.1f \ ///
 		years_since_splenectomy conts %4.1f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/demographics by splenectomy.xlsx", replace)
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("$SPLENECTOMY_PE_OUTPUT/demographics by splenectomy.xlsx", replace)
 ```
 
 ### Admit characteristics (floor vs ICU, LOS)
@@ -50,7 +66,7 @@ table1_mc, by(splenectomy) ///
 		hospitallosdays conts %4.0f \ ///
 		iculos conts %4.0f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/admit chars by splenectomy.xlsx", replace)	
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("$SPLENECTOMY_PE_OUTPUT/admit chars by splenectomy.xlsx", replace)
 ```
 
 ```{python}
@@ -67,7 +83,7 @@ title("PESI Score by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PESI by Splenectomy Status.png", as(png) name("Graph") replace 
+graph export "$SPLENECTOMY_PE_OUTPUT/PESI by Splenectomy Status.png", as(png) name("Graph") replace
 ```
 
 ```{python}
@@ -104,7 +120,7 @@ table1_mc, by(splenectomy) ///
 		troponin_max conts %4.2f \ ///
 		bnp_max conts %4.0f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/rv strain by splenectomy.xlsx", replace)
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("$SPLENECTOMY_PE_OUTPUT/rv strain by splenectomy.xlsx", replace)
 ```
 
 ```{python}
@@ -121,7 +137,7 @@ title("PA Diameter by Splenectomy Status", size(large)) ///
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PA Diameter by Splenectomy Status.png", as(png) name("Graph") replace
+graph export "$SPLENECTOMY_PE_OUTPUT/PA Diameter by Splenectomy Status.png", as(png) name("Graph") replace
 ```
 
 ```{python}
@@ -138,7 +154,7 @@ title("Pulm Artery to Ascending Aorta ratio, by Splenectomy Status", size(large)
 xsize(7) ///
 ysize(5) ///
 scheme(white_tableau)
-graph export "Results and Figures/$S_DATE/PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
+graph export "$SPLENECTOMY_PE_OUTPUT/PA to AA by Splenectomy Status.png", as(png) name("Graph") replace
 ```
 
 Note, really high rate of enlarged PA
@@ -171,7 +187,7 @@ table1_mc, by(splenectomy) ///
 		peripheral bin %4.0f \ ///
 		qanadli conts %4.2f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/clot chars by splenectomy.xlsx", replace)	
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("$SPLENECTOMY_PE_OUTPUT/clot chars by splenectomy.xlsx", replace)
 ```
 
 ```{python}
@@ -201,19 +217,19 @@ table1_mc, by(splenectomy) ///
 		dvt_workup bin %4.0f \ ///
 		dvt_found bin %4.0f \ ///
 		) ///
-		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("Results and Figures/$S_DATE/dvt presence by splenectomy.xlsx", replace)
+		percent_n percsign("%") iqrmiddle(",") sdleft(" (±") sdright(")") missing onecol saving("$SPLENECTOMY_PE_OUTPUT/dvt presence by splenectomy.xlsx", replace)
 ```
 
 ## Main Analyses
 
-Here are the main associations between splenectomy status and Central vs Peripheral and Qanadli score. 
+Here are the main associations between splenectomy status and Central vs Peripheral and Qanadli score.
 
 ```{python}
 %%stata
-cs peripheral splenectomy 
+cs peripheral splenectomy
 ```
 
-I used a Poisson regression because Qanadli score is actually a proportion (of occluded segments). 
+I used a Poisson regression because Qanadli score is actually a proportion (of occluded segments).
 
 Thus, the interpretation is: patients with splenectomy have 0.84x [0.42-1.68] of non-splenectomy
 
@@ -239,7 +255,7 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
+scheme(white_tableau)
 ```
 
 For the Peripheral vs Central classification, we can present this as an Odds Ratio or a Relative Risk - either way works
@@ -271,12 +287,12 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
+scheme(white_tableau)
 ```
 
 more likely to be peripehral if splenectomy, after accounting for other factors.
 
-Lastly - the PA size metrics. 
+Lastly - the PA size metrics.
 
 They have relatively normal distributions - so just modeled with plain old linear regression
 
@@ -301,7 +317,7 @@ mlabel(string(@b,"%9.2f") + " [ " + string(@ll,"%9.2f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
+scheme(white_tableau)
 ```
 
 ```{python}
@@ -325,7 +341,7 @@ mlabel(string(@b,"%9.3f") + " [ " + string(@ll,"%9.3f") + " - " + string(@ul,"%9
 mlabsize(medsmall) ///
 mlabposition(12) ///
 mlabgap(*1) ///
-scheme(white_tableau) 
+scheme(white_tableau)
 ```
 
 ## Appendix
@@ -334,10 +350,10 @@ scheme(white_tableau)
 
 (Can move this to the end; probably just summarize the agreement and then could include visualizations in supplement if anyone asks - they probably wont)
 
-First, inter-rater agreement of central-vs peripheral is assessed: I would report the Kappa for this. 
+First, inter-rater agreement of central-vs peripheral is assessed: I would report the Kappa for this.
 Then, for the Qanadli score - limits of agreement are rported: I would report the mean difference (95% UL and LL agreement)
 
-These are pretty good. 
+These are pretty good.
 
 ```{python}
 %%stata
@@ -348,7 +364,7 @@ kappaetc central_darren central_mark, tab benchmark(d) showscale
 ```{python}
 %%stata
 pvenn2 central_darren central_mark, plabel("Central_DW" "Central_MD") title("Agreement in Central Determination")
-graph export "Results and Figures/$S_DATE/Overlap in Central Assessments.png", as(png) name("Graph") replace 
+graph export "$SPLENECTOMY_PE_OUTPUT/Overlap in Central Assessments.png", as(png) name("Graph") replace
 ```
 
 ```{python}
@@ -360,7 +376,6 @@ di "Mean difference of ratings: " r(mean_diff)
 di "Lower limit of agreement: " r(loa_ll)
 di "Upper limit of agreement: " r(loa_ul)
 di "Level for limits of agreement: " r(loa_level)
-kappaetc qanadli_mark qanadli_darren, loa 
-graph export "Results and Figures/$S_DATE/Bland Altman Qanadli.png", as(png) name("Graph") replace 
+kappaetc qanadli_mark qanadli_darren, loa
+graph export "$SPLENECTOMY_PE_OUTPUT/Bland Altman Qanadli.png", as(png) name("Graph") replace
 ```
-

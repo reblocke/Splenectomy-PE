@@ -1,0 +1,40 @@
+# Splenectomy-PE
+
+Repository: https://github.com/reblocke/Splenectomy-PE
+Primary article: Splenectomy Increases CTEPH Risk and Modifies Clinical Features of Acute Pulmonary Embolism
+DOI: https://doi.org/10.1002/pul2.70231
+PubMed: https://pubmed.ncbi.nlm.nih.gov/41472662/
+PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC12745883/
+PMID: 41472662
+PMCID: PMC12745883
+Journal: Pulmonary Circulation. 2025 Dec 29;16(1):e70231; eCollection 2026 Jan.
+Secondary conference record: ATS 2025 abstract A6391, DOI https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A6391
+
+Purpose:
+This repository contains public analysis code for a retrospective clinical study of splenectomy, pulmonary embolism, and chronic thromboembolic pulmonary hypertension. It is intended to make the code and workflow discoverable and citable without exposing restricted clinical data.
+
+Data restrictions:
+The source workbooks are restricted clinical data and are not committed. Expected local-only inputs are data/private/PE after splenectomy.xlsx with sheet Included patients and data/private/PE without splenectomy.xlsx with sheet Sheet1. Derived row-level files such as full_db.dta and cleaned_splenectomy_pe_data.xlsx are also local-only outputs.
+
+Canonical workflow:
+1. stata-mp -b do "Splenectomy PE data cleaning.do" "data/private" "outputs/stata"
+2. stata-mp -b do "Splenectomy PE Analysis.do" "outputs/stata/derived" "outputs/stata"
+3. Optional narrative render after derived data exist: STATA_HOME=/Applications/Stata STATA_EDITION=be quarto render splenectomy_analysis.qmd
+
+Key files:
+- README.md: human-readable project overview, run commands, data restrictions, citation, and dependencies.
+- CITATION.cff: machine-readable repository and article citation metadata.
+- AGENTS.md: repository-specific rules for future coding agents.
+- data_dictionary.md and data_dictionary.csv: variable, source, derived-variable, and output documentation without row-level data.
+- Splenectomy PE data cleaning.do: imports and harmonizes restricted workbooks into local derived data.
+- Splenectomy PE Analysis.do: produces tables, figures, rater-agreement checks, and models from the derived dataset.
+- splenectomy_analysis.qmd and splenectomy_analysis.ipynb: optional narrative analysis files; committed notebook outputs should remain stripped.
+
+Generated outputs:
+All logs, Stata-derived datasets, rendered reports, tables, and figures should be written under ignored outputs/ paths. Do not commit generated run folders, internal manuscript drafts, reviewer files, publisher PDFs, or patient-level data.
+
+License boundaries:
+Repository code and original documentation are MIT licensed. Restricted clinical data are not licensed for public reuse. Use DOI, PubMed, and PMC links for article text discovery rather than copying publisher or PMC text into the repository.
+
+Agent cautions:
+Preserve analysis logic unless explicitly asked for a scientific refactor. Keep path/output hygiene changes narrow. Update README.md, llms.txt, CITATION.cff, and the data dictionary files together when interfaces or publication metadata change.

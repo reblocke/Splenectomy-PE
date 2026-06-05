@@ -1,30 +1,47 @@
 cff-version: 1.2.0
-message: >-
-  If you use this repository, please cite this software and, once available,
-  the associated preprint/journal article.
+message: "If you use this repository, please cite the final article and the repository version or commit used."
 type: software
-title: "Splenectomy–PE: analysis code for studies of splenectomy, PE, and CTEPH"
-version: 0.1.0
-date-released: 2025-09-30
+title: "Splenectomy-PE: analysis code for splenectomy, PE, and CTEPH"
+version: 0.2.0
+date-released: 2026-06-04
 repository-code: "https://github.com/reblocke/Splenectomy-PE"
+url: "https://github.com/reblocke/Splenectomy-PE"
 license: MIT
 authors:
   - family-names: Locke
-    given-names: Brian
+    given-names: Brian W.
     orcid: "https://orcid.org/0000-0002-3588-5238"
-    affiliation: "Intermountain Medical Center; Intermountain Health"
+    affiliation: "Division of Pulmonary and Critical Care Medicine, University of Utah; Department of Pulmonary and Critical Care Medicine, Intermountain Medical Center"
 keywords:
-  - CTEPH
-  - pulmonary embolism
   - splenectomy
+  - pulmonary embolism
+  - chronic thromboembolic pulmonary hypertension
+  - CTEPH
+  - Pulmonary Circulation
   - Stata
   - Quarto
+  - clinical research
 preferred-citation:
-  type: misc
-  title: "Splenectomy–PE (analysis code)"
+  type: article
+  title: "Splenectomy Increases CTEPH Risk and Modifies Clinical Features of Acute Pulmonary Embolism"
   authors:
+    - family-names: White
+      given-names: Darren
     - family-names: Locke
-      given-names: Brian
+      given-names: Brian W.
       orcid: "https://orcid.org/0000-0002-3588-5238"
+    - family-names: Scarpato
+      given-names: Brittany M.
+    - family-names: Cirulis
+      given-names: Meghan M.
+    - family-names: Raif
+      given-names: Kaan
+    - family-names: Dodson
+      given-names: Mark W.
   year: 2025
-  notes: "Software supporting a manuscript in preparation; conference abstract presented at ATS 2025 (A6391)."
+  journal: "Pulmonary Circulation"
+  volume: 16
+  issue: 1
+  pages: "e70231"
+  doi: "10.1002/pul2.70231"
+  url: "https://doi.org/10.1002/pul2.70231"

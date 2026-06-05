@@ -1,58 +1,93 @@
-/* 
-Splenectomy PE 
+/*
+Splenectomy PE
 
 Analytic Code
 
 Brian W Locke MD MSCI
 
-Data cleaning notes: 
+Data cleaning notes:
 
 - la_area (splenectomy) vs la_volumelm2 (in no splenectomy) - ignored for now
 - No PV-acceleration times found in the non splenectomy
-- very high rates of PA enlargment (by PAd or PA:AA) compared to Scarpato's paper - presumably owing to the active PEs. Not sure if there's data to reference here. 
-- Do we really want to count ITP and AIHA as clotting disorders? 
+- very high rates of PA enlargment (by PAd or PA:AA) compared to Scarpato's paper - presumably owing to the active PEs. Not sure if there's data to reference here.
+- Do we really want to count ITP and AIHA as clotting disorders?
 
-*/ 
+*/
 
+version 17.0
 capture log close
 
-* Load data
+* Arguments:
+*   1. input root containing restricted workbooks, default data/private
+*   2. output root for derived data and logs, default outputs/stata
 clear
+local input_root "data/private"
+local output_root "outputs/stata"
+if "`1'" != "" local input_root "`1'"
+if "`2'" != "" local output_root "`2'"
 
-//cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/Splenectomy-PE"
-cd "/Users/reblocke/Research/Splenectomy-PE"
+local run_date = subinstr("`c(current_date)'", " ", "-", .)
+local run_dir "`output_root'/`run_date'"
+local log_dir "`run_dir'/Logs"
+local derived_dir "`output_root'/derived"
 
-capture mkdir "Results and Figures"
-capture mkdir "Results and Figures/$S_DATE/" //make new folder for figure output if needed
-capture mkdir "Results and Figures/$S_DATE/Logs/" //new folder for stata logs
+capture mkdir "outputs"
+capture mkdir "`output_root'"
+capture mkdir "`run_dir'"
+capture mkdir "`log_dir'"
+capture mkdir "`derived_dir'"
 
-/* Set up Do File Back-up*/ 
+/* Set up Do File Back-up*/
 local a1=substr(c(current_time),1,2)
 local a2=substr(c(current_time),4,2)
 local a3=substr(c(current_time),7,2)
 local b = "Splenectomy PE data cleaning.do" // do file name
-copy "`b'" "Results and Figures/$S_DATE/Logs/(`a1'_`a2'_`a3')`b'"
+copy "`b'" "`log_dir'/(`a1'_`a2'_`a3')`b'", replace
 
-set scheme cleanplots
+capture set scheme cleanplots
+if _rc {
+	di as text "Optional cleanplots scheme not installed; using current Stata scheme."
+}
 graph set window fontface "Helvetica"
-log using temp.log, replace
+log using "`log_dir'/data_cleaning.log", replace text
 
 
-/* Import Data and Reconcile/Combine Spreadsheets */ 
+/* Import Data and Reconcile/Combine Spreadsheets */
 
 clear
-cd "Data"
+local splenectomy_workbook "`input_root'/PE after splenectomy.xlsx"
+local no_splenectomy_workbook "`input_root'/PE without splenectomy.xlsx"
 
-import excel "PE after splenectomy.xlsx", sheet("Included patients") firstrow case(lower)
+capture confirm file "`splenectomy_workbook'"
+if _rc {
+	di as error "Required restricted workbook not found: `splenectomy_workbook'"
+	di as error "Provide a local governed copy or pass a different input root as argument 1."
+	exit 601
+}
 
-drop if missing(pe_diagnosis_dt)  // drop rows not corresponding to a pt 
+capture confirm file "`no_splenectomy_workbook'"
+if _rc {
+	di as error "Required restricted workbook not found: `no_splenectomy_workbook'"
+	di as error "Provide a local governed copy or pass a different input root as argument 1."
+	exit 601
+}
+
+import excel "`splenectomy_workbook'", sheet("Included patients") firstrow case(lower)
+
+capture confirm variable pe_diagnosis_dt
+if !_rc {
+	drop if missing(pe_diagnosis_dt)  // drop rows not corresponding to a pt
+}
+else {
+	drop if missing(pe_diagnosis_dt_reviseddw)
+}
 
 //new vars Apr 2025 analysis (only kept a few): dvtworkupdone1yes dvtworkuppositive rvwidthabovetvmm lvwidthabovemvmm rvlvratio rvlv1 pesymptomduration2weeks
 keep age_peyears centraldarrensreview qanadlifinal centralmarksreview marksqanadli malegender1yes0no chronicchanges1yes0no bmi_pe raceethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup pediagnosissettingoutptinp edpedx1yes petherapyactpamechanical procedure_dt pe_diagnosis_dt_reviseddw dvtworkupdone1yes dvtworkuppositive rvlvratio pesymptomduration2weeks
 
 destring chronicchanges1yes0no, replace
-rename age_peyears age 
-destring age, replace 
+rename age_peyears age
+destring age, replace
 rename centraldarrensreview central_darren
 replace central_darren = 0 if missing(central_darren)
 rename qanadlifinal qanadli_darren
@@ -61,7 +96,7 @@ replace central_mark = 1 if centralmarksreview == "central"
 drop centralmarksreview
 rename marksqanadli qanadli_mark
 gen splenectomy = 1
-rename malegender1yes0no male_sex 
+rename malegender1yes0no male_sex
 rename chronicchanges1yes0no chronic_changes
 replace raceethnicity = lower(trim(raceethnicity))
 destring bmi_pe, replace force
@@ -86,11 +121,29 @@ rename dvtworkuppositive dvt_found
 destring pesymptomduration2weeks, replace force
 rename pesymptomduration2weeks symptoms_two_weeks
 
-save splenectomy, replace
+save "`derived_dir'/splenectomy.dta", replace
 clear
 
-import excel "PE without splenectomy.xlsx", sheet("Sheet1") firstrow case(lower)
-drop if missing(pe_diagnosis_dt) // drop rows not corresponding to a pt 
+import excel "`no_splenectomy_workbook'", sheet("Sheet1") firstrow case(lower)
+capture confirm variable troponin_maxngml
+if !_rc {
+	rename troponin_maxngml troponin_max
+}
+capture confirm variable trvelocity_initialms
+if !_rc {
+	rename trvelocity_initialms trvelocity_initial
+}
+capture confirm variable raarea_initialcm2
+if !_rc {
+	rename raarea_initialcm2 raarea_initial
+}
+capture confirm variable pe_diagnosis_dt
+if !_rc {
+	drop if missing(pe_diagnosis_dt) // drop rows not corresponding to a pt
+}
+else {
+	drop if missing(pe_diagnosis_dt_reviseddw)
+}
 
 //new vars: dvtworkupwithin2weeksofpe dvtworkupdone1yes dvtworkuppositive rvwidthbelowtvmm lvwidthbelowmvmm rvlvratio rvlv1 ctephdiagnosis symptomduration2weeksattime
 keep age_peyears dwpelocation dwqanadli marklocation markqanadli malegender1yes0no chronicchanges bmi_pe ethnicity pesi_pe admissionlocation hospitallosdays iculos bnp_max troponin_max rightheartstrain dilatedpulmartery rvlvratio_initial1abnormal padiametermm aorticdiametermm paa paenlargement1yes0no2 increasedpaa09 paenlargementorincreasedpaa hxofpriorpedvt hxofpriorthrombosispvtcva highesthr_pe lowestbp_pemap o2max_pe malignancy immobilityinjurywithin30d surgerywithin30d sicklecell  clottingdisorder chf chroniclungdisease afib pregnancy estrogenuse obesity cvcwithin30d thyroiddisease inflammatoryboweldisease ef septalflatteneningonecho rvsp pvacceltime trvelocity_initial tapse_initial rvbasaldiameter_initial raarea_initial presenceofeffusiononecho antiphospholipidab lupusanticoagulant factorviii nonobloodgroup petherapyactpamechanical pe_diagnosis_dt_reviseddw dvtworkupdone1yes dvtworkuppositive rvlvratio symptomduration2weeksattime
@@ -102,16 +155,16 @@ replace central_darren = 1 if dwpelocation == "central"
 drop dwpelocation
 rename dwqanadli qanadli_darren
 replace marklocation = lower(trim(marklocation))
-gen central_mark = 0 
+gen central_mark = 0
 replace central_mark = 1 if marklocation == "interlobar"
 replace central_mark = 1 if marklocation == "main pa"
 replace central_mark = 1 if marklocation == "lobar"
 drop marklocation
 rename markqanadli qanadli_mark
 gen  splenectomy = 0
-rename malegender1yes0no male_sex 
-gen chronic_changes = 0 
-replace chronic_change = 1 if chronicchanges == 1
+rename malegender1yes0no male_sex
+gen chronic_changes = 0
+replace chronic_changes = 1 if chronicchanges == 1
 drop chronicchanges
 rename ethnicity raceethnicity
 replace raceethnicity = lower(trim(raceethnicity))
@@ -120,7 +173,6 @@ replace hospitallosdays = 0 if missing(hospitallosdays)
 replace iculos = 0 if missing(iculos)
 replace bnp_max = "0" if bnp_max == "<10"
 destring bnp_max, replace force
-rename troponin_maxngml troponin_max
 replace troponin_max = "0" if troponin_max == "<0.02"
 replace troponin_max = "0" if troponin_max == "<0.01"
 destring troponin_max, replace force
@@ -129,8 +181,6 @@ replace increasedpaa09 = 0 if missing(increasedpaa09)
 replace paenlargementorincreasedpaa = 0 if missing(paenlargementorincreasedpaa)
 destring highesthr_pe, replace force
 replace lowestbp_pemap = "" if lowestbp_pemap == "arrest"
-rename trvelocity_initialms trvelocity_initial 
-rename raarea_initialcm2 raarea_initial
 gen edpedx1yes = 1
 
 //dvtworkupdone1yes dvtworkuppositive rvlvratio symptomduration2weeksattime
@@ -141,9 +191,9 @@ rename dvtworkuppositive dvt_found
 destring symptomduration2weeksattime, replace force
 rename symptomduration2weeksattime symptoms_two_weeks
 
-save no_splenectomy, replace
+save "`derived_dir'/no_splenectomy.dta", replace
 
-append using splenectomy.dta
+append using "`derived_dir'/splenectomy.dta"
 
 
 //Variable Defintions
@@ -170,15 +220,15 @@ label variable bnp_max "BNP (max)"
 label variable troponin_max "Troponin (max)"
 label variable years_since_splenectomy "Years between Splenectomy and PE"
 
-rename padiametermm pa_d 
+rename padiametermm pa_d
 label variable pa_d "Pulm Art diameter (mm)"
 rename aorticdiametermm aa_d
 label variable aa_d "Asc Aorta diameter (mm)"
-rename paa pa_aa 
+rename paa pa_aa
 label variable pa_aa "PA to AA ratio"
 rename paenlargement1yes0no2 pa_enlarged
 label variable pa_enlarged "PA Enlarged? (>27 mm fem; >29 mm male)"
-rename increasedpaa09 high_pa_aa 
+rename increasedpaa09 high_pa_aa
 label variable high_pa_aa "PA:AA > 0.9?"
 rename paenlargementorincreasedpaa pa_enlarged_by_d_or_ratio
 label variable pa_enlarged_by_d_or_ratio "PA Enlargment by diam or ratio?"
@@ -217,36 +267,36 @@ label variable rightheartstrain "R Heart Strain? (CT)"
 
 replace hxofpriorpedvt = "yes" if hxofpriorpedvt == "DVT"
 replace hxofpriorpedvt = "yes" if lower(substr(hxofpriorpedvt, 1, 3)) == "yes"
-gen prior_pe_dvt = 0 
+gen prior_pe_dvt = 0
 replace prior_pe_dvt = 1 if hxofpriorpedvt == "yes"
 label variable prior_pe_dvt "Prior PE or DVT?"
 drop hxofpriorpedvt
 
 replace hxofpriorthrombosispvtcva = "yes" if lower(substr(hxofpriorthrombosispvtcva, 1, 3)) == "yes"
-gen prior_other_vte = 0 
+gen prior_other_vte = 0
 replace prior_other_vte = 1 if hxofpriorthrombosispvtcva == "yes"
 label variable prior_other_vte "Prior Other VTE? (PVT, SMV)"
 drop hxofpriorthrombosispvtcva
 
 replace malignancy = "no" if strpos(malignancy, "poss") > 0  //no confirmed
 replace malignancy = "yes" if lower(substr(malignancy, 1, 3)) == "yes"
-gen active_malig = 0 
-replace active_malig = 1 if malignancy == "yes" 
+gen active_malig = 0
+replace active_malig = 1 if malignancy == "yes"
 drop malignancy
 label variable active_malig "Malignancy"
 
 replace immobilityinjurywithin30d  = "yes" if lower(substr(immobilityinjurywithin30d , 1, 3)) == "yes"
-gen wells_immobility = . 
-replace wells_immobility = 0 if immobilityinjurywithin30d  == "no" 
-replace wells_immobility = 1 if immobilityinjurywithin30d  == "yes" 
-drop immobilityinjurywithin30d 
+gen wells_immobility = .
+replace wells_immobility = 0 if immobilityinjurywithin30d  == "no"
+replace wells_immobility = 1 if immobilityinjurywithin30d  == "yes"
+drop immobilityinjurywithin30d
 label variable wells_immobility "Injury/Immobility w/n 30d"
 
 replace surgerywithin30d   = "yes" if lower(substr(surgerywithin30d, 1, 3)) == "yes"
-gen wells_surg = . 
-replace wells_surg = 0 if surgerywithin30d == "no" 
-replace wells_surg = 1 if surgerywithin30d == "yes" 
-drop surgerywithin30d 
+gen wells_surg = .
+replace wells_surg = 0 if surgerywithin30d == "no"
+replace wells_surg = 1 if surgerywithin30d == "yes"
+drop surgerywithin30d
 label variable wells_surg "Surgery w/n 30d"
 
 replace sicklecell = strtrim(sicklecell)
@@ -282,12 +332,12 @@ label variable a_fib "Atrial Fibrillation"
 
 replace pregnancy = strtrim(pregnancy)
 encode pregnancy, label(binary_lab) generate(curr_preg)
-drop pregnancy 
+drop pregnancy
 label variable curr_preg "Current Pregnancy"
 
 replace estrogenuse = strtrim(estrogenuse)
 encode estrogenuse, label(binary_lab) generate(curr_estr)
-drop estrogenuse 
+drop estrogenuse
 label variable curr_estr "Current Exogenous Estrogen Use"
 
 replace obesity = strtrim(obesity)
@@ -313,19 +363,19 @@ encode inflammatoryboweldisease, label(binary_lab) generate(ibd)
 drop inflammatoryboweldisease
 label variable ibd "Inflammatory Bowel Disease"
 
-rename highesthr_pe highest_hr 
+rename highesthr_pe highest_hr
 label variable highest_hr "Highest Heart Rate"
 
 replace o2max_pe = lower(o2max_pe)
-replace o2max_pe = "Vent" if strpos(o2max_pe, "vent") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "vent") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "hfnc") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "nrb") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "pap") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "mask") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "fio2") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "10l") > 0 
-replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "15l") > 0 
+replace o2max_pe = "Vent" if strpos(o2max_pe, "vent") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "vent") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "hfnc") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "nrb") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "pap") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "mask") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "fio2") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "10l") > 0
+replace o2max_pe = "NIV, HFNC, Facemask" if strpos(o2max_pe, "15l") > 0
 replace o2max_pe = regexr(o2max_pe, "\(.+\)$", "") // remove parentheses
 replace o2max_pe = "1l" if o2max_pe == "1"
 replace o2max_pe = "2l" if o2max_pe == "2"
@@ -366,7 +416,7 @@ rename dilatedpulmartery_binary dilatedpulmartery
 label variable dilatedpulmartery "Dilated PA on CT?"
 
 drop rvlvratio_initial1abnormal
-//Old code for radiologist read 
+//Old code for radiologist read
 /*
 replace rvlvratio_initial1abnormal = lower(strtrim(rvlvratio_initial1abnormal))
 replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "n/a"
@@ -376,12 +426,12 @@ replace rvlvratio_initial1abnormal = "" if rvlvratio_initial1abnormal == "indete
 replace rvlvratio_initial1abnormal = "0.9" if rvlvratio_initial1abnormal == "<1" //normal RV:LV < 1
 replace rvlvratio_initial1abnormal = "1.1" if rvlvratio_initial1abnormal == ">1"
 destring rvlvratio_initial1abnormal, replace force
-*/ 
+*/
 gen rvlvratio_initial1abnormal_bin = .
 //replace rvlvratio_initial1abnormal_bin = 1 if !missing(rvlvratio_initial1abnormal) & rvlvratio_initial1abnormal > 1
 replace rvlvratio_initial1abnormal_bin = 1 if rvlvratio >= 1
 //replace rvlvratio_initial1abnormal_bin = 0 if !missing(rvlvratio_initial1abnormal) &rvlvratio_initial1abnormal < 1
-replace rvlvratio_initial1abnormal = 0 if rvlvratio < 1
+replace rvlvratio_initial1abnormal_bin = 0 if rvlvratio < 1
 //drop rvlvratio_initial1abnormal
 rename rvlvratio_initial1abnormal_bin rvlvratio_initial1abnormal
 label variable rvlvratio_initial1abnormal "Abnormal RV:LV?"
@@ -518,24 +568,24 @@ replace anticoagulated = 1 if regexm(petherapyactpamechanical, "ac")
 label values anticoagulated binary_lab
 label variable anticoagulated "Treated with Anticoagulation"
 
-gen tpa = 0 
+gen tpa = 0
 replace tpa = 1 if regexm(petherapyactpamechanical, "tpa")
 label values tpa binary_lab
 label variable tpa "Treated with TPA"
 
-gen ivc_filter = 0 
+gen ivc_filter = 0
 replace ivc_filter = 1 if regexm(petherapyactpamechanical, "ivc")
 label values ivc_filter binary_lab
 label variable ivc_filter "Treated with IVC filter"
 
-gen mechanical_tx = 0 
+gen mechanical_tx = 0
 replace mechanical_tx = 1 if regexm(petherapyactpamechanical, "mech")
 replace mechanical_tx = 1 if regexm(petherapyactpamechanical, "thrombect")
 replace mechanical_tx = 1 if regexm(petherapyactpamechanical, "embolect")
 label values mechanical_tx binary_lab
 label variable mechanical_tx "Treated with Mechanical Thrombectomy"
 
-gen no_treatment = 0 
+gen no_treatment = 0
 replace no_treatment = 1 if regexm(petherapyactpamechanical, "none")
 replace no_treatment = 1 if regexm(petherapyactpamechanical, "no int")
 label values no_treatment binary_lab
@@ -551,7 +601,7 @@ replace symptoms_two_weeks = 0 if missing(symptoms_two_weeks)
 
 
 label values rvlvratio_initial1abnormal binary_lab
-label values dilatedpulmartery binary_lab 
+label values dilatedpulmartery binary_lab
 label values rightheartstrain binary_lab
 label values prior_pe_dvt binary_lab
 label values prior_other_vte binary_lab
@@ -585,9 +635,7 @@ gen is_white = (lower(raceethnicity) == "white")
 label variable is_white "White Race?"
 label values is_white binary_lab
 
-save full_db, replace
-export excel using "cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
-cd ..
+save "`derived_dir'/full_db.dta", replace
+export excel using "`derived_dir'/cleaned_splenectomy_pe_data.xlsx", replace firstrow(variables)
 
-
-
+log close

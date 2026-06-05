@@ -9,24 +9,52 @@
 #!*.qmd
 #!*.doc*
 #!*.xls*
-*.gph
+# Restricted source and derived data
+Data/
+data/
+!data_dictionary.csv
 *.dta
 *.csv
-*.mp4
-*.m4a
-~*
+!data_dictionary.csv
+*.xlsx
+*.xlsm
+*.xls
 
-# Do Ignore specific folders
+# Generated analysis outputs
+outputs/
 Results and Figures/
-Data/
-.conda
+figures/
+splenectomy_analysis.html
+splenectomy_analysis_files/
+*.gph
+*.ster
+*.log
+*.smcl
+temp.log
 
+# Local manuscript/reviewer artifacts
+Paper/
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.rtf
+*.pdf
 
-# Optionally, ignore other common unnecessary files
+# Local environments and caches
+.conda/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS and editor files
 .DS_Store
 Thumbs.db
-*.log
 *.stswp
+~*
 .Rhistory
-/splenectomy_analysis_files/figure-html
-/splenectomy_analysis_files/libs
+*.mp4
+*.m4a
