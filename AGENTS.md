@@ -35,6 +35,6 @@ STATA_HOME=/Applications/Stata STATA_EDITION=be quarto render splenectomy_analys
 ## Verification Before Publishing
 
 - Run `git diff --check`.
-- Validate `CITATION.cff` with CFF tooling and parse it as YAML.
+- After citation edits, validate `CITATION.cff` with CFF tooling and parse it as YAML.
 - Confirm no tracked files under `Paper/`, no rendered HTML report, no `.dta` files, no restricted workbooks, no logs, no `.DS_Store`, and no `.Rhistory`.
-- If Stata is available, run the canonical commands or confirm they fail only with the documented missing-data message.
+- For analysis/runner changes, perform applicable Stata verification within the authorized workflow. It requires a licensed runtime and the approved inputs; executable availability alone does not authorize a restricted-data run. Inspect generated logs and report unavailable data/package/runtime gates separately from static checks.
